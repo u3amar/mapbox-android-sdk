@@ -47,5 +47,8 @@ public class OfflineMapTileProvider extends MapTileLayerBase implements MapboxCo
         if (getTileSource() != null) {
             getTileSource().detach();
         }
+        if (offlineMapDatabase != null) {
+            offlineMapDatabase.closeDatabase();
+        }
     }
 }

@@ -18,6 +18,8 @@ public class OfflineMapDatabase implements MapboxConstants {
 
     private Context context;
 
+    private SQLiteDatabase db;
+
     private String uniqueID;
     private String mapID;
     private boolean includesMetadata;
@@ -107,9 +109,8 @@ public class OfflineMapDatabase implements MapboxConstants {
             this.minimumZ = Integer.parseInt(minimumZ);
             this.maximumZ = Integer.parseInt(maximumZ);
 
-            SQLiteDatabase db = OfflineDatabaseManager.getOfflineDatabaseManager(context).getOfflineDatabaseHandlerForMapId(mapID).getReadableDatabase();
+            SQLiteDatabase db = database();
             this.path = db.getPath();
-            db.close();
 
             this.initializedProperly = true;
         } else {
@@ -139,32 +140,54 @@ public class OfflineMapDatabase implements MapboxConstants {
             return null;
         }
 
+        SQLiteDatabase db = database();
+        if (db == null)
+            return null;
+
         String query = "SELECT " + OfflineDatabaseHandler.FIELD_METADATA_VALUE + " FROM " + OfflineDatabaseHandler.TABLE_METADATA + " WHERE " + OfflineDatabaseHandler.FIELD_METADATA_NAME + "='" + name + "';";
-        SQLiteDatabase db = OfflineDatabaseManager.getOfflineDatabaseManager(context).getOfflineDatabaseHandlerForMapId(mapID).getReadableDatabase();
         Cursor cursor = db.rawQuery(query, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            String res = cursor.getString(cursor.getColumnIndex(OfflineDatabaseHandler.FIELD_METADATA_VALUE));
-            cursor.close();
-            db.close();
-            return res;
+        if (cursor == null)
+            return null;
+
+        String res = null;
+        if (cursor.moveToFirst()) {
+            res = cursor.getString(cursor.getColumnIndex(OfflineDatabaseHandler.FIELD_METADATA_VALUE));
         }
-        return null;
+        cursor.close();
+        return res;
     }
 
     public byte[] sqliteDataForURL(String url) {
         if (mapID == null) {
             return null;
         }
-        SQLiteDatabase db = OfflineDatabaseManager.getOfflineDatabaseManager(context).getOfflineDatabaseHandlerForMapId(mapID).getReadableDatabase();
+        SQLiteDatabase db = database();
+        if (db == null)
+            return null;
+
         String query = "SELECT " + OfflineDatabaseHandler.FIELD_DATA_VALUE + " FROM " + OfflineDatabaseHandler.TABLE_DATA + " WHERE " + OfflineDatabaseHandler.FIELD_DATA_ID + "= (SELECT " + OfflineDatabaseHandler.FIELD_RESOURCES_ID + " from " + OfflineDatabaseHandler.TABLE_RESOURCES + " where " + OfflineDatabaseHandler.FIELD_RESOURCES_URL + " = '" + url + "');";
         Cursor cursor = db.rawQuery(query, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            byte[] blob = cursor.getBlob(cursor.getColumnIndex(OfflineDatabaseHandler.FIELD_DATA_VALUE));
-            cursor.close();
-            db.close();
-            return blob;
+        if (cursor == null)
+            return null;
+
+        byte[] res = null;
+        if (cursor.moveToFirst()) {
+            res = cursor.getBlob(cursor.getColumnIndex(OfflineDatabaseHandler.FIELD_DATA_VALUE));
         }
-        db.close();
-        return null;
+        cursor.close();
+        return res;
+    }
+
+    private SQLiteDatabase database() {
+        if (db == null) {
+            db = OfflineDatabaseManager.getOfflineDatabaseManager(context).getOfflineDatabaseHandlerForMapId(mapID).getReadableDatabase();
+        }
+        return db;
+    }
+
+    public void closeDatabase() {
+        if (db != null) {
+            db.close();
+        }
     }
 }
