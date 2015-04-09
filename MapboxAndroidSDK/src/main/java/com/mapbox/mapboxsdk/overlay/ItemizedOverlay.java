@@ -8,12 +8,16 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
+
+import com.mapbox.mapboxsdk.util.MathUtils;
 import com.mapbox.mapboxsdk.views.MapView;
 import com.mapbox.mapboxsdk.views.safecanvas.ISafeCanvas;
 import com.mapbox.mapboxsdk.views.safecanvas.ISafeCanvas.UnsafeCanvasHandler;
 import com.mapbox.mapboxsdk.views.safecanvas.SafePaint;
 import com.mapbox.mapboxsdk.views.util.Projection;
+
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Draws a list of {@link Marker} as markers to a map. The item with the lowest index is drawn
@@ -26,14 +30,19 @@ import java.util.ArrayList;
  * @author Fred Eisele
  */
 public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay.Snappable {
-
+    private static final String TAG = ItemizedOverlay.class.getSimpleName();
     private final ArrayList<Marker> mInternalItemList;
+    private final ArrayList<Cluster> mInternalClusterList;
     protected boolean mDrawFocusedItem = true;
     private Marker mFocusedItem;
     private boolean mPendingFocusChangedEvent = false;
     private OnFocusChangeListener mOnFocusChangeListener;
+    private boolean mIsClusteringEnabled;
+    private Cluster.OnDrawClusterListener mOnDrawClusterListener;
 
     private static SafePaint mClusterTextPaint;
+
+    private static final double CLUSTER_RADIUS = 0.00001;
 
     /**
      * Method by which subclasses create the actual Items. This will only be called from populate()
@@ -59,6 +68,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         }
 
         mInternalItemList = new ArrayList<Marker>();
+        mInternalClusterList = new ArrayList<Cluster>();
     }
 
     /**
@@ -77,16 +87,15 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
      * The focused item is always drawn last, which puts it visually on top of the other
      * items.<br/>
      *
-     * @param canvas the Canvas upon which to draw. Note that this may already have a
-     * transformation
-     * applied, so be sure to leave it the way you found it
+     * @param canvas  the Canvas upon which to draw. Note that this may already have a
+     *                transformation
+     *                applied, so be sure to leave it the way you found it
      * @param mapView the MapView that requested the draw. Use MapView.getProjection() to convert
-     * between on-screen pixels and latitude/longitude pairs
-     * @param shadow if true, draw the shadow layer. If false, draw the overlay contents.
+     *                between on-screen pixels and latitude/longitude pairs
+     * @param shadow  if true, draw the shadow layer. If false, draw the overlay contents.
      */
     @Override
     protected void drawSafe(ISafeCanvas canvas, MapView mapView, boolean shadow) {
-
         if (shadow) {
             return;
         }
@@ -104,16 +113,35 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         pj.rotateRect(bounds);
         final float mapScale = 1 / mapView.getScale();
 
-    /* Draw in backward cycle, so the items with the least index are on the front. */
-        for (int i = size; i >= 0; i--) {
-            final Marker item = getItem(i);
-            if (item == mFocusedItem) {
-                continue;
+        if (mIsClusteringEnabled) {
+            int clusterSize = mInternalClusterList.size() - 1;
+            for (int i = clusterSize; i >= 0; i--) {
+                final Cluster cluster = mInternalClusterList.get(i);
+                List<Marker> markerList = cluster.getMarkersReadOnly();
+
+                if (markerList.size() > 1) {
+                    if (mOnDrawClusterListener != null) {
+                        Drawable drawable = mOnDrawClusterListener.drawCluster(cluster);
+                        cluster.setMarker(drawable);
+                    }
+                    onDrawItem(canvas, cluster, pj, mapView.getMapOrientation(), bounds, mapScale);
+                } else {
+                    onDrawItem(canvas, markerList.get(0), pj, mapView.getMapOrientation(), bounds, mapScale);
+                }
             }
-            onDrawItem(canvas, item, pj, mapView.getMapOrientation(), bounds, mapScale);
-        }
-        if (mFocusedItem != null) {
-            onDrawItem(canvas, mFocusedItem, pj, mapView.getMapOrientation(), bounds, mapScale);
+        } else {
+            /* Draw in backward cycle, so the items with the least index are on the front. */
+            for (int i = size; i >= 0; i--) {
+                final Marker item = getItem(i);
+                if (item == mFocusedItem) {
+                    continue;
+                }
+                onDrawItem(canvas, item, pj, mapView.getMapOrientation(), bounds, mapScale);
+            }
+
+            if (mFocusedItem != null) {
+                onDrawItem(canvas, mFocusedItem, pj, mapView.getMapOrientation(), bounds, mapScale);
+            }
         }
     }
 
@@ -146,16 +174,15 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
     /**
      * Draws an item located at the provided screen coordinates to the canvas.
      *
-     * @param canvas what the item is drawn upon.
-     * @param item the item to be drawn.
-     * @param projection the projection to use.
+     * @param canvas          what the item is drawn upon.
+     * @param item            the item to be drawn.
+     * @param projection      the projection to use.
      * @param aMapOrientation
      * @param mapBounds
      * @param mapScale
      */
     protected void onDrawItem(ISafeCanvas canvas, final Marker item, final Projection projection,
-            final float aMapOrientation, final RectF mapBounds, final float mapScale) {
-
+                              final float aMapOrientation, final RectF mapBounds, final float mapScale) {
         item.updateDrawingPosition();
         final PointF position = item.getPositionOnMap();
         final Point roundedCoords = new Point((int) position.x, (int) position.y);
@@ -192,7 +219,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
     }
 
     protected boolean markerHitTest(final Marker pMarker, final Projection pProjection,
-            final float pX, final float pY) {
+                                    final float pX, final float pY) {
         RectF rect = pMarker.getHitBounds(pProjection, null);
 /*
         RectF rect = pMarker.getDrawingBounds(pProjection, null);
@@ -297,7 +324,88 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         mOnFocusChangeListener = l;
     }
 
-    public static interface OnFocusChangeListener {
+    public interface OnFocusChangeListener {
         void onFocusChanged(ItemizedOverlay overlay, Marker newFocus);
+    }
+
+    /**
+     * Called when the zoom level has changed
+     *
+     * @param mapView
+     * @param zoomLevel
+     */
+    public void onNewZoom(final MapView mapView, final float zoomLevel) {
+        if (mIsClusteringEnabled) {
+            createClusters(mapView, zoomLevel);
+        }
+    }
+
+    /**
+     * Create the clusters from the list of markers
+     *
+     * @param mapView
+     * @param zoomLevel
+     */
+    protected void createClusters(final MapView mapView, final float zoomLevel) {
+        final int size = this.mInternalItemList.size() - 1;
+        mInternalClusterList.clear();
+        for (int i = size; i >= 0; i--) {
+            final Marker item = getItem(i);
+            Cluster cluster = null;
+            if (item.isClusteringEnabled()) {
+                cluster = findClusterForMarker(item, zoomLevel);
+            }
+
+            if (cluster == null) {
+                cluster = new Cluster(item);
+                mInternalClusterList.add(cluster);
+                cluster.addTo(mapView);
+            } else {
+                cluster.addMarkerToCluster(item);
+            }
+
+        }
+    }
+
+    /**
+     * Find the nearest cluster from a marker, in a limited radius.
+     *
+     * @param marker
+     * @param zoomLevel
+     * @return
+     */
+    protected Cluster findClusterForMarker(final Marker marker, final float zoomLevel) {
+        if (mInternalClusterList.size() > 0) {
+            double nearestDistance = Double.MAX_VALUE;
+            Cluster nearestCluster = null;
+            for (Cluster cluster : mInternalClusterList) {
+                if (cluster.isUsable()) {
+                    double distance = MathUtils.getDistance(cluster.getPoint(), marker.getPoint());
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestCluster = cluster;
+                    }
+                }
+            }
+            double zoom = MathUtils.round(zoomLevel, 1);
+            zoom = zoom + (zoom % 0.2);
+            double factor = Math.pow(10, (19 - zoom));
+
+            if (nearestDistance < Math.pow(CLUSTER_RADIUS * factor, 2)) {
+                return nearestCluster;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Enable or disable clustering
+     *
+     * @param enabled
+     * @param onDrawClusterListener A listener that allows the modification of the cluster's drawable
+     */
+    public void setClusteringEnabled(final boolean enabled, final Cluster.OnDrawClusterListener onDrawClusterListener) {
+        mIsClusteringEnabled = enabled;
+        mOnDrawClusterListener = onDrawClusterListener;
     }
 }

@@ -21,6 +21,7 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Scroller;
+
 import com.almeros.android.multitouch.RotateGestureDetector;
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.mapbox.mapboxsdk.R;
@@ -31,6 +32,7 @@ import com.mapbox.mapboxsdk.events.ScrollEvent;
 import com.mapbox.mapboxsdk.events.ZoomEvent;
 import com.mapbox.mapboxsdk.geometry.BoundingBox;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.overlay.Cluster;
 import com.mapbox.mapboxsdk.overlay.GeoJSONPainter;
 import com.mapbox.mapboxsdk.overlay.GpsLocationProvider;
 import com.mapbox.mapboxsdk.overlay.ItemizedIconOverlay;
@@ -59,7 +61,9 @@ import com.mapbox.mapboxsdk.views.util.TileLoadedListener;
 import com.mapbox.mapboxsdk.views.util.TilesLoadedListener;
 import com.mapbox.mapboxsdk.views.util.constants.MapViewConstants;
 import com.mapbox.mapboxsdk.views.util.constants.MapViewLayouts;
+
 import org.json.JSONException;
+
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -169,6 +173,9 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     private UserLocationOverlay mLocationOverlay;
 
+    private boolean mIsClusteringEnabled = false;
+    private Cluster.OnDrawClusterListener mOnDrawClusterListener = null;
+
     /**
      * Constructor for XML layout calls. Should not be used programmatically.
      *
@@ -255,6 +262,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Add a new MapListener that observes changes in this map.
+     *
      * @param listener
      */
     public void addListener(final MapListener listener) {
@@ -265,6 +273,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Remove a listener object that observed changes in this map.
+     *
      * @param listener
      */
     public void removeListener(MapListener listener) {
@@ -277,6 +286,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
      * Add an overlay to this map. If the overlay is already included,
      * does nothing. After adding the overlay, invalidates the map to
      * redraw it.
+     *
      * @param overlay
      */
     public void addOverlay(final Overlay overlay) {
@@ -292,6 +302,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     /**
      * Remove an overlay from displaying in this map and invalidates
      * the map to trigger a redraw.
+     *
      * @param overlay
      */
     public void removeOverlay(final Overlay overlay) {
@@ -319,8 +330,9 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Set Mapbox Access Token for this MapView.
-     * @see <a href="https://www.mapbox.com/developers/api/#access-tokens">https://www.mapbox.com/developers/api/#access-tokens</a>
+     *
      * @param accessToken String
+     * @see <a href="https://www.mapbox.com/developers/api/#access-tokens">https://www.mapbox.com/developers/api/#access-tokens</a>
      */
     public void setAccessToken(final String accessToken) {
         MapboxUtils.setAccessToken(accessToken);
@@ -329,6 +341,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     /**
      * Set the tile source of this map as an array of tile layers,
      * which will be presented on top of each other.
+     *
      * @param value Array of TileLayer
      */
     public void setTileSource(final ITileLayer[] value) {
@@ -341,6 +354,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     /**
      * Set the tile source of this map as a single source, and trigger
      * an update.
+     *
      * @param aTileSource TileLayer to use
      */
     public void setTileSource(final ITileLayer aTileSource) {
@@ -392,6 +406,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
             defaultMarkerOverlay.addItem(marker);
         }
         marker.addTo(this);
+        defaultMarkerOverlay.onNewZoom(this, mZoomLevel);
         firstMarker = false;
         return marker;
     }
@@ -464,6 +479,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Get all itemized overlays on the map as an ArrayList.
+     *
      * @return ArrayList<ItemizedIconOverlay> ArrayList of ItemizedIconOverlays
      */
     public ArrayList<ItemizedIconOverlay> getItemizedOverlays() {
@@ -489,6 +505,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Parse a GeoJSON file at a given URL
+     *
      * @param url The URL of GeoJSON string to parse
      * @return FeatureCollection Parsed GeoJSON
      */
@@ -511,6 +528,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Get the current tooltip of this map if there is one being displayed.
+     *
      * @return
      */
     public InfoWindow getCurrentTooltip() {
@@ -536,7 +554,23 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
                     }
                 }
         );
+        defaultMarkerOverlay.setClusteringEnabled(mIsClusteringEnabled, mOnDrawClusterListener);
         addItemizedOverlay(defaultMarkerOverlay);
+    }
+
+    /**
+     * Enable or disable clustering
+     *
+     * @param enabled
+     * @param onDrawClusterListener A listener that allows the modification of the cluster's drawable
+     */
+    public void setClusteringEnabled(boolean enabled, Cluster.OnDrawClusterListener onDrawClusterListener) {
+        mIsClusteringEnabled = enabled;
+        mOnDrawClusterListener = onDrawClusterListener;
+        if (defaultMarkerOverlay != null) {
+            defaultMarkerOverlay.setClusteringEnabled(enabled, onDrawClusterListener);
+        }
+
     }
 
     /**
@@ -703,6 +737,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
         float newZoom = mZoomLevel + zoomDelta;
         if (newZoom <= mMaximumZoomLevel && newZoom >= mMinimumZoomLevel) {
             mMultiTouchScale = scale;
+            defaultMarkerOverlay.onNewZoom(this, newZoom);
             updateInversedTransformMatrix();
             invalidate();
         }
@@ -958,6 +993,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     protected float getAnimatedZoom() {
         return Float.intBitsToFloat(mTargetZoomLevel.get());
     }
+
     protected void setAnimatedZoom(float value) {
         mTargetZoomLevel.set(Float.floatToIntBits(value));
     }
@@ -967,7 +1003,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     }
 
     protected boolean isAnimatedZoomSet() {
-        return  Float.intBitsToFloat(mTargetZoomLevel.get()) != -1;
+        return Float.intBitsToFloat(mTargetZoomLevel.get()) != -1;
     }
 
     /**
@@ -1111,6 +1147,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Gets the mapView onMapOrientationChangeListener
+     *
      * @return the onMapOrientationChangeListener
      */
     public OnMapOrientationChangeListener getOnMapOrientationChangeListener() {
@@ -1119,6 +1156,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Gets the mapView onMapOrientationChangeListener
+     *
      * @param l the onMapOrientationChangeListener
      */
     public void setOnMapOrientationChangeListener(OnMapOrientationChangeListener l) {
@@ -1821,6 +1859,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
 
     /**
      * Get status of user location overlay
+     *
      * @return boolean true if enabled, false if not enabled
      */
     public final boolean getUserLocationEnabled() {
