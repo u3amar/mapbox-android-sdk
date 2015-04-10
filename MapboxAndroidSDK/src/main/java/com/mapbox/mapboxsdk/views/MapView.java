@@ -145,7 +145,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     protected PointF mMultiTouchScalePoint = new PointF();
     protected Matrix mInvTransformMatrix = new Matrix();
 
-    protected List<MapListener> mListeners = new ArrayList<MapListener>();
+    protected List<MapListener> mListeners = new ArrayList<>();
 
     private float mapOrientation = 0;
     private final float[] mRotatePoints = new float[2];
@@ -406,9 +406,22 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
             defaultMarkerOverlay.addItem(marker);
         }
         marker.addTo(this);
-        defaultMarkerOverlay.onNewZoom(this, mZoomLevel);
+
         firstMarker = false;
         return marker;
+    }
+
+    public void addMarkers(final List<Marker> markers) {
+        if (firstMarker) {
+            defaultMarkerList.addAll(markers);
+            setDefaultItemizedOverlay();
+        } else {
+            defaultMarkerOverlay.addItems(markers);
+        }
+        for (Marker marker : markers) {
+            marker.addTo(this);
+        }
+        firstMarker = false;
     }
 
     /**
@@ -472,6 +485,11 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
             for (int lc = 0; lc < overlay.size(); lc++) {
                 overlay.getItem(lc).addTo(this);
             }
+        }
+
+        if (itemizedOverlay.isClusteringEnabled()) {
+            addListener(itemizedOverlay);
+            itemizedOverlay.onZoom(new ZoomEvent(this, getZoomLevel(), false));
         }
 
         this.getOverlays().add(itemizedOverlay);
@@ -554,6 +572,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
                     }
                 }
         );
+        addListener(defaultMarkerOverlay);
         defaultMarkerOverlay.setClusteringEnabled(mIsClusteringEnabled, mOnDrawClusterListener);
         addItemizedOverlay(defaultMarkerOverlay);
     }
@@ -737,7 +756,6 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
         float newZoom = mZoomLevel + zoomDelta;
         if (newZoom <= mMaximumZoomLevel && newZoom >= mMinimumZoomLevel) {
             mMultiTouchScale = scale;
-            defaultMarkerOverlay.onNewZoom(this, newZoom);
             updateInversedTransformMatrix();
             invalidate();
         }
