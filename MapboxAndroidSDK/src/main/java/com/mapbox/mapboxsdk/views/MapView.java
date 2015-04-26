@@ -393,6 +393,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
         }
         marker.addTo(this);
         firstMarker = false;
+        invalidate();
         return marker;
     }
 
