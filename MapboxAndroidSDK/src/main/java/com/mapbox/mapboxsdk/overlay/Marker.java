@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 
 import com.mapbox.mapboxsdk.R;
+import com.mapbox.mapboxsdk.clustering.ClusterItem;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.util.BitmapUtils;
 import com.mapbox.mapboxsdk.views.InfoWindow;
@@ -20,7 +21,7 @@ import com.mapbox.mapboxsdk.views.util.constants.MapViewConstants;
 /**
  * Immutable class describing a LatLng with a Title and a Description.
  */
-public class Marker implements MapViewConstants {
+public class Marker implements MapViewConstants, ClusterItem {
 
     private static String TAG = "Marker";
 
@@ -165,6 +166,11 @@ public class Marker implements MapViewConstants {
         if (mParentHolder != null) {
             mParentHolder.blurItem(this);
         }
+    }
+
+    @Override
+    public LatLng getPosition() {
+        return mLatLng;
     }
 
     /**

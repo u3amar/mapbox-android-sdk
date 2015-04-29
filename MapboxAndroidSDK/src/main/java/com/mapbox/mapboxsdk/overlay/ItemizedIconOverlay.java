@@ -149,6 +149,10 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
         return result;
     }
 
+    public void clearFocus() {
+        setFocus(null);
+    }
+
     public Marker removeItem(final int position) {
         final Marker item = mItemList.remove(position);
         if (item != null) {

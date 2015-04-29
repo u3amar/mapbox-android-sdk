@@ -32,7 +32,7 @@ import com.mapbox.mapboxsdk.events.ScrollEvent;
 import com.mapbox.mapboxsdk.events.ZoomEvent;
 import com.mapbox.mapboxsdk.geometry.BoundingBox;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.overlay.Cluster;
+import com.mapbox.mapboxsdk.overlay.ClusterMarker;
 import com.mapbox.mapboxsdk.overlay.GeoJSONPainter;
 import com.mapbox.mapboxsdk.overlay.GpsLocationProvider;
 import com.mapbox.mapboxsdk.overlay.ItemizedIconOverlay;
@@ -174,7 +174,9 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     private UserLocationOverlay mLocationOverlay;
 
     private boolean mIsClusteringEnabled = false;
-    private Cluster.OnDrawClusterListener mOnDrawClusterListener = null;
+    private ClusterMarker.OnDrawClusterListener mOnDrawClusterListener = null;
+    private float mMinZoomForClustering = 22;
+    private boolean mShouldDisplayBubble = true;
 
     /**
      * Constructor for XML layout calls. Should not be used programmatically.
@@ -433,6 +435,12 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
         this.invalidate();
     }
 
+    public void removeMarkers(final List<Marker> markers) {
+        defaultMarkerList.removeAll(markers);
+        defaultMarkerOverlay.removeItems(markers);
+        this.invalidate();
+    }
+
     /**
      * Remove all markers from the map's display.
      */
@@ -441,6 +449,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
         if (defaultMarkerOverlay != null) {
             defaultMarkerOverlay.removeAllItems();
         }
+
         this.invalidate();
     }
 
@@ -467,9 +476,15 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
                 mMapViewListener.onShowMarker(MapView.this, marker);
             }
             currentTooltip = toolTip;
-            if (displayBubble) {
+            if (mShouldDisplayBubble && displayBubble) {
                 marker.showBubble(currentTooltip, MapView.this, true);
             }
+        }
+    }
+
+    public void clearMarkerFocus() {
+        if (defaultMarkerOverlay != null) {
+            defaultMarkerOverlay.clearFocus();
         }
     }
 
@@ -573,7 +588,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
                 }
         );
         addListener(defaultMarkerOverlay);
-        defaultMarkerOverlay.setClusteringEnabled(mIsClusteringEnabled, mOnDrawClusterListener);
+        defaultMarkerOverlay.setClusteringEnabled(mIsClusteringEnabled, mOnDrawClusterListener, mMinZoomForClustering);
         addItemizedOverlay(defaultMarkerOverlay);
     }
 
@@ -582,14 +597,27 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
      *
      * @param enabled
      * @param onDrawClusterListener A listener that allows the modification of the cluster's drawable
+     * @param minimumZoomLevel      minimum zoom level to do clustering. 0 to use default value (always clustering)
      */
-    public void setClusteringEnabled(boolean enabled, Cluster.OnDrawClusterListener onDrawClusterListener) {
+    public void setClusteringEnabled(boolean enabled, ClusterMarker.OnDrawClusterListener onDrawClusterListener, float minimumZoomLevel) {
         mIsClusteringEnabled = enabled;
         mOnDrawClusterListener = onDrawClusterListener;
-        if (defaultMarkerOverlay != null) {
-            defaultMarkerOverlay.setClusteringEnabled(enabled, onDrawClusterListener);
+        if(minimumZoomLevel > 0) {
+            mMinZoomForClustering = minimumZoomLevel;
         }
 
+        if (defaultMarkerOverlay != null) {
+            defaultMarkerOverlay.setClusteringEnabled(enabled, onDrawClusterListener, minimumZoomLevel);
+        }
+    }
+
+    public void recomputeCluster() {
+        if (mListeners.size() > 0) {
+            final ZoomEvent event = new ZoomEvent(this, mZoomLevel, false);
+            for (MapListener listener : mListeners) {
+                listener.onZoom(event);
+            }
+        }
     }
 
     /**
@@ -2082,5 +2110,10 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     @Override
     public String toString() {
         return "MapView {" + getTileProvider() + "}";
+    }
+
+    public void setBubbleEnabled(boolean enable) {
+        closeCurrentTooltip();
+        mShouldDisplayBubble = enable;
     }
 }
