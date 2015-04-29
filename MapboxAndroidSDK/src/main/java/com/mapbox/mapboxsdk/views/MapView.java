@@ -2112,6 +2112,10 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
         return "MapView {" + getTileProvider() + "}";
     }
 
+    /**
+     * Allows to disable the tooltip displayed on marker click.
+     * @param enable
+     */
     public void setBubbleEnabled(boolean enable) {
         closeCurrentTooltip();
         mShouldDisplayBubble = enable;
