@@ -20,10 +20,6 @@ import java.util.List;
  */
 public class ClusterMarker extends Marker {
     private List<Marker> mMarkerList = new ArrayList<>();
-    /**
-     * Convenient boolean to see if a cluster is usable for others markers or not.
-     */
-    private boolean mMarkerWithClusteringEnabled = true;
 
     public ClusterMarker() {
         super("", "", new LatLng(0, 0));
@@ -32,9 +28,6 @@ public class ClusterMarker extends Marker {
     public ClusterMarker(Marker marker) {
         super("", "", new LatLng(0, 0));
         addMarkerToCluster(marker);
-        if (!marker.isClusteringEnabled()) {
-            mMarkerWithClusteringEnabled = false;
-        }
 
     }
 
@@ -86,11 +79,7 @@ public class ClusterMarker extends Marker {
         return Collections.unmodifiableList(mMarkerList);
     }
 
-    public boolean isUsable() {
-        return mMarkerWithClusteringEnabled;
-    }
-
-    public void setMarkerNumber(int count) {
+    public void setClusterItemCount(int count) {
         if (mMarker instanceof NumberBitmapDrawable) {
             ((NumberBitmapDrawable) mMarker).setCount(count);
         }

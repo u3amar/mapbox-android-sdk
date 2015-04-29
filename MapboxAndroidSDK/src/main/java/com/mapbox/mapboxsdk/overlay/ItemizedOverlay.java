@@ -8,7 +8,6 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.os.Debug;
 import android.view.MotionEvent;
 
 import com.mapbox.mapboxsdk.clustering.Cluster;
@@ -18,7 +17,6 @@ import com.mapbox.mapboxsdk.events.MapListener;
 import com.mapbox.mapboxsdk.events.RotateEvent;
 import com.mapbox.mapboxsdk.events.ScrollEvent;
 import com.mapbox.mapboxsdk.events.ZoomEvent;
-import com.mapbox.mapboxsdk.util.MathUtils;
 import com.mapbox.mapboxsdk.views.MapView;
 import com.mapbox.mapboxsdk.views.safecanvas.ISafeCanvas;
 import com.mapbox.mapboxsdk.views.safecanvas.ISafeCanvas.UnsafeCanvasHandler;
@@ -347,78 +345,6 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         void onFocusChanged(ItemizedOverlay overlay, Marker newFocus);
     }
 
-    /**
-     * Create the clusters from the list of markers
-     *
-     * @param mapView
-     * @param zoomLevel
-     */
-    protected static ArrayList<ClusterMarker> createClusters(final MapView mapView, final float zoomLevel, ArrayList<Marker> markerList) {
-        Debug.startMethodTracing("calc");
-        final int size = markerList.size() - 1;
-        ArrayList<ClusterMarker> clusterList = new ArrayList<>();
-        for (int i = size; i >= 0; i--) {
-            final Marker item = markerList.get(i);
-            ClusterMarker cluster = null;
-            if (item.isClusteringEnabled()) {
-                cluster = findClusterForMarker(item, zoomLevel, clusterList);
-            }
-
-            if (cluster == null) {
-                cluster = new ClusterMarker(item);
-                clusterList.add(cluster);
-                cluster.addTo(mapView);
-            } else {
-                cluster.addMarkerToCluster(item);
-            }
-
-        }
-        Debug.stopMethodTracing();
-        return clusterList;
-    }
-
-    private static final int CLUSTER_RADIUS = 1800 * 1000; // 1800 Km
-
-    /**
-     * Find the nearest cluster from a marker, in a limited radius.
-     *
-     * @param marker
-     * @param zoomLevel
-     * @return
-     */
-    protected static ClusterMarker findClusterForMarker(final Marker marker, final float zoomLevel, ArrayList<ClusterMarker> clusterList) {
-        if (clusterList.size() > 0) {
-            double nearestDistance = Double.MAX_VALUE;
-            ClusterMarker nearestCluster = null;
-            for (ClusterMarker cluster : clusterList) {
-                if (cluster.isUsable()) {
-                    double distanceSquared = Math.pow((cluster.getPoint().getLatitude() - marker.getPoint().getLatitude()), 2) + Math.pow((cluster.getPoint().getLongitude() - marker.getPoint().getLongitude()), 2);
-
-                    if (distanceSquared < nearestDistance) {
-                        nearestDistance = distanceSquared;
-                        nearestCluster = cluster;
-                    }
-                }
-            }
-            if (nearestCluster != null) {
-                double zoom = MathUtils.round(zoomLevel, 1);
-                zoom = zoom + (zoom % 0.2) - 3;
-                if (zoom <= -1) {
-                    zoom -= Math.round(zoom);
-                }
-
-                double factor = (Math.pow(2, zoom));
-                double radius = CLUSTER_RADIUS / factor;
-
-                int distance = nearestCluster.getPoint().distanceTo(marker.getPoint());
-
-                if (distance < radius) {
-                    return nearestCluster;
-                }
-            }
-        }
-        return null;
-    }
 
     /**
      * Enable or disable clustering

@@ -30,7 +30,6 @@ public class Marker implements MapViewConstants, ClusterItem {
     public static final int ITEM_STATE_SELECTED_MASK = 2;
 
     private int group = 0;
-    private boolean mClustered = true;
 
     private final RectF mMyLocationRect = new RectF(0, 0, 0, 0);
     private final RectF mMyLocationPreviousRect = new RectF(0, 0, 0, 0);
@@ -582,13 +581,5 @@ public class Marker implements MapViewConstants, ClusterItem {
                 mapView.invalidateMapCoordinates(newRect);
             }
         });
-    }
-
-    public void setClusteringEnabled(boolean enabled) {
-        mClustered = enabled;
-    }
-
-    public boolean isClusteringEnabled() {
-        return mClustered;
     }
 }
