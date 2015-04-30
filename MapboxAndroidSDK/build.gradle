@@ -34,8 +34,8 @@ repositories {
 dependencies {
     compile 'com.vividsolutions:jts:1.13'
     compile 'com.android.support:support-v4:21.0.3'
-    compile 'com.squareup.okhttp:okhttp:2.2.0'
-    compile 'com.squareup.okhttp:okhttp-urlconnection:2.2.0'
+    compile 'com.squareup.okhttp:okhttp:2.3.0'
+    compile 'com.squareup.okhttp:okhttp-urlconnection:2.3.0'
     compile 'com.nineoldandroids:library:2.4.0'
     compile 'com.jakewharton:disklrucache:2.0.2'
 }
@@ -59,7 +59,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
-    
+
     sourceSets {
 
         main {
