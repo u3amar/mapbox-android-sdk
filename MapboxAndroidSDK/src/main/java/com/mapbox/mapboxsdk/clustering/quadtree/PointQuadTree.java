@@ -46,7 +46,7 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
     /**
      * Maximum number of elements to store in a quad before splitting.
      */
-    private final static int MAX_ELEMENTS = 50;
+    private static final int MAX_ELEMENTS = 50;
 
     /**
      * The elements inside this quad, if any.
@@ -56,7 +56,7 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
     /**
      * Maximum depth.
      */
-    private final static int MAX_DEPTH = 40;
+    private static final int MAX_DEPTH = 40;
 
     /**
      * Child quads.

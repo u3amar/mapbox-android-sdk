@@ -1,6 +1,7 @@
 package com.mapbox.mapboxsdk.clustering.algo;
 
 import android.support.v4.util.LruCache;
+import android.util.Log;
 
 import com.mapbox.mapboxsdk.clustering.Cluster;
 import com.mapbox.mapboxsdk.clustering.ClusterItem;
@@ -101,6 +102,7 @@ public class PreCachingAlgorithmDecorator<T extends ClusterItem> implements Algo
                 Thread.sleep((long) (Math.random() * 500 + 500));
             } catch (InterruptedException e) {
                 // ignore. keep going.
+                Log.e("PrecahceRunnable", e.toString());
             }
             getClustersInternal(mZoom);
         }

@@ -603,7 +603,7 @@ public class MapView extends ViewGroup implements MapViewConstants, MapEventsRec
     public void setClusteringEnabled(boolean enabled, ClusterMarker.OnDrawClusterListener onDrawClusterListener, float minimumZoomLevel) {
         mIsClusteringEnabled = enabled;
         mOnDrawClusterListener = onDrawClusterListener;
-        if(minimumZoomLevel > 0) {
+        if (minimumZoomLevel > 0) {
             mMinZoomForClustering = minimumZoomLevel;
         }
 
