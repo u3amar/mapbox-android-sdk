@@ -5,9 +5,11 @@ import android.graphics.Point;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.WindowManager;
+
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.views.MapView;
 import com.mapbox.mapboxsdk.views.util.Projection;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -145,6 +147,10 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
         }
         populate();
         return result;
+    }
+
+    public void clearFocus() {
+        setFocus(null);
     }
 
     public Marker removeItem(final int position) {

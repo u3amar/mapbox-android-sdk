@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+
 import java.util.ArrayList;
 
 public class MainActivity extends ActionBarActivity {
@@ -52,6 +53,7 @@ public class MainActivity extends ActionBarActivity {
         testFragmentNames.add(getString(R.string.tapForUTFGridTestMap));
         testFragmentNames.add(getString(R.string.customMarkerTestMap));
         testFragmentNames.add(getString(R.string.rotatedMapTestMap));
+        testFragmentNames.add(getString(R.string.clusteredMarkersTestMap));
 
         mDrawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_list_item, testFragmentNames));
         // Set the list's click listener
@@ -115,7 +117,9 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    /** Swaps fragments in the main content view */
+    /**
+     * Swaps fragments in the main content view
+     */
     private void selectItem(int position) {
         selectedFragmentIndex = position;
         // Create a new fragment and specify the planet to show based on position
@@ -173,6 +177,9 @@ public class MainActivity extends ActionBarActivity {
             case 16:
                 fragment = new RotatedMapTestFragment();
                 break;
+            case 17:
+                fragment = new ClusteredMarkersTestFragment();
+                break;
             default:
                 fragment = new MainTestFragment();
                 break;
@@ -181,8 +188,8 @@ public class MainActivity extends ActionBarActivity {
         // Insert the fragment by replacing any existing fragment
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
-            .replace(R.id.content_frame, fragment)
-            .commit();
+                .replace(R.id.content_frame, fragment)
+                .commit();
 
         // Highlight the selected item, update the title, and close the drawer
         mDrawerList.setItemChecked(position, true);

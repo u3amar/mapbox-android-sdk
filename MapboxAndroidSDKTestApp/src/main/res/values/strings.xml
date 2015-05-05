@@ -17,6 +17,7 @@
     <string name="tapForUTFGridTestMap">Tap For UTFGrid</string>
     <string name="customMarkerTestMap">Custom Marker</string>
     <string name="rotatedMapTestMap">Rotated Map</string>
+    <string name="clusteredMarkersTestMap">Clustered Markers Test</string>
     <string name="pathTestMap">PathOverlay</string>
     <string name="bingTestMap">Bing Test Map</string>
     <string name="mapbox_id_street">examples.map-i87786ca</string>
