@@ -339,7 +339,7 @@ public class OfflineMapDownloader implements MapboxConstants {
 
 //        [_sqliteQueue addOperationWithBlock:^{
         // Get the actual URLs
-        Iterator<String> urlIter = sqliteReadArrayOfOfflineMapURLsToBeDownloadLimit(-1);
+        Iterator<String> urlIter = sqliteReadOfflineMapURLsToBeDownloadedLimit(-1);
         if (urlIter == null) {
             // The operation failed for one reason or another (e.g. we're on the main thread).
             closeDatabase();
@@ -385,11 +385,11 @@ public class OfflineMapDownloader implements MapboxConstants {
 
 //      String query2 = "INSERT INTO data(value) VALUES(?);";
         ContentValues values = new ContentValues();
-        values.put(OfflineDatabaseHandler.FIELD_DATA_VALUE, data);
-        db.insert(OfflineDatabaseHandler.TABLE_DATA, null, values);
+        values.put(OfflineDatabaseHandler.FIELD_RESOURCES_URL, url);
+        values.put(OfflineDatabaseHandler.FIELD_RESOURCES_DATA, data);
+        values.put(OfflineDatabaseHandler.FIELD_RESOURCES_STATUS, 200);
+        db.replace(OfflineDatabaseHandler.TABLE_RESOURCES, null, values);
 
-//      [query appendFormat:@"UPDATE resources SET status=200,id=last_insert_rowid() WHERE url='%@';\n",[url absoluteString]];
-        db.execSQL(String.format(MAPBOX_LOCALE, "UPDATE %s SET %s=200, %s=last_insert_rowid() WHERE %s='%s';", OfflineDatabaseHandler.TABLE_RESOURCES, OfflineDatabaseHandler.FIELD_RESOURCES_STATUS, OfflineDatabaseHandler.FIELD_RESOURCES_ID, OfflineDatabaseHandler.FIELD_RESOURCES_URL, url));
         db.setTransactionSuccessful();
         db.endTransaction();
 
@@ -450,9 +450,9 @@ public class OfflineMapDownloader implements MapboxConstants {
         }
     }
 
-    public Iterator<String> sqliteReadArrayOfOfflineMapURLsToBeDownloadLimit(int limit) {
+    public Iterator<String> sqliteReadOfflineMapURLsToBeDownloadedLimit(int limit) {
         if (AppUtils.runningOnMainThread()) {
-            Log.w(TAG, "Attempting to run sqliteReadArrayOfOfflineMapURLsToBeDownloadLimit() on main thread.  Returning.");
+            Log.w(TAG, "Attempting to run sqliteReadOfflineMapURLsToBeDownloadedLimit() on main thread.  Returning.");
             return null;
         }
 

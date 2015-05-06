@@ -25,9 +25,6 @@ public class OfflineMapDatabase implements MapboxConstants {
     private boolean includesMetadata;
     private boolean includesMarkers;
     private RasterImageQuality imageQuality;
-    private CoordinateRegion mapRegion;
-    private Integer minimumZ;
-    private Integer maximumZ;
     private String path;
     private boolean invalid;
     private boolean initializedProperly = false;
@@ -76,21 +73,12 @@ public class OfflineMapDatabase implements MapboxConstants {
         String includesMetadata = sqliteMetadataForName("includesMetadata");
         String includesMarkers = sqliteMetadataForName("includesMarkers");
         String imageQuality = sqliteMetadataForName("imageQuality");
-        String region_latitude = sqliteMetadataForName("region_latitude");
-        String region_longitude = sqliteMetadataForName("region_longitude");
-        String region_latitude_delta = sqliteMetadataForName("region_latitude_delta");
-        String region_longitude_delta = sqliteMetadataForName("region_longitude_delta");
-        String minimumZ = sqliteMetadataForName("minimumZ");
-        String maximumZ = sqliteMetadataForName("maximumZ");
 
         if (TextUtils.isEmpty(uniqueID)) {
-            uniqueID = String.format(MAPBOX_LOCALE, "%s-%s-%s-%s-%s-%s-%s-%d", mapID, region_latitude, region_longitude, region_latitude_delta, region_longitude_delta, minimumZ, maximumZ, new Date().getTime() / 1000L);
+            uniqueID = String.format(MAPBOX_LOCALE, "%s-%d", mapID, new Date().getTime() / 1000L);
         }
 
-        if (!TextUtils.isEmpty(mapID) && !TextUtils.isEmpty(includesMetadata) && !TextUtils.isEmpty(includesMarkers) && !TextUtils.isEmpty(imageQuality)
-                && !TextUtils.isEmpty(region_latitude) && !TextUtils.isEmpty(region_longitude) && !TextUtils.isEmpty(region_latitude_delta) && !TextUtils.isEmpty(region_longitude_delta)
-                && !TextUtils.isEmpty(minimumZ) && !TextUtils.isEmpty(maximumZ)
-                ) {
+        if (!TextUtils.isEmpty(mapID) && !TextUtils.isEmpty(includesMetadata) && !TextUtils.isEmpty(includesMarkers) && !TextUtils.isEmpty(imageQuality)) {
             // Reaching this point means that the specified database file at path pointed to an sqlite file which had
             // all the required values in its metadata table. That means the file passed the test for being a valid
             // offline map database.
@@ -101,13 +89,6 @@ public class OfflineMapDatabase implements MapboxConstants {
             this.includesMarkers = "YES".equalsIgnoreCase(includesMarkers);
 
             this.imageQuality = RasterImageQuality.getEnumForValue(Integer.parseInt(imageQuality));
-
-            LatLng center = new LatLng(Double.parseDouble(region_latitude), Double.parseDouble(region_longitude));
-            CoordinateSpan span = new CoordinateSpan(Double.parseDouble(region_latitude_delta), Double.parseDouble(region_longitude_delta));
-            this.mapRegion = new CoordinateRegion(center, span);
-
-            this.minimumZ = Integer.parseInt(minimumZ);
-            this.maximumZ = Integer.parseInt(maximumZ);
 
             SQLiteDatabase db = database();
             this.path = db.getPath();
@@ -144,8 +125,9 @@ public class OfflineMapDatabase implements MapboxConstants {
         if (db == null)
             return null;
 
-        String query = "SELECT " + OfflineDatabaseHandler.FIELD_METADATA_VALUE + " FROM " + OfflineDatabaseHandler.TABLE_METADATA + " WHERE " + OfflineDatabaseHandler.FIELD_METADATA_NAME + "='" + name + "';";
-        Cursor cursor = db.rawQuery(query, null);
+        String query = "SELECT " + OfflineDatabaseHandler.FIELD_METADATA_VALUE + " FROM " + OfflineDatabaseHandler.TABLE_METADATA + " WHERE " + OfflineDatabaseHandler.FIELD_METADATA_NAME + "=?;";
+        String[] selectionArgs = new String[] { name };
+        Cursor cursor = db.rawQuery(query, selectionArgs);
         if (cursor == null)
             return null;
 
@@ -165,14 +147,15 @@ public class OfflineMapDatabase implements MapboxConstants {
         if (db == null)
             return null;
 
-        String query = "SELECT " + OfflineDatabaseHandler.FIELD_DATA_VALUE + " FROM " + OfflineDatabaseHandler.TABLE_DATA + " WHERE " + OfflineDatabaseHandler.FIELD_DATA_ID + "= (SELECT " + OfflineDatabaseHandler.FIELD_RESOURCES_ID + " from " + OfflineDatabaseHandler.TABLE_RESOURCES + " where " + OfflineDatabaseHandler.FIELD_RESOURCES_URL + " = '" + url + "');";
-        Cursor cursor = db.rawQuery(query, null);
+        String query = "SELECT " + OfflineDatabaseHandler.FIELD_RESOURCES_DATA + " FROM " + OfflineDatabaseHandler.TABLE_RESOURCES + " WHERE " + OfflineDatabaseHandler.FIELD_RESOURCES_URL + "=?;";
+        String[] selectionArgs = new String[] { url };
+        Cursor cursor = db.rawQuery(query, selectionArgs);
         if (cursor == null)
             return null;
 
         byte[] res = null;
         if (cursor.moveToFirst()) {
-            res = cursor.getBlob(cursor.getColumnIndex(OfflineDatabaseHandler.FIELD_DATA_VALUE));
+            res = cursor.getBlob(cursor.getColumnIndex(OfflineDatabaseHandler.FIELD_RESOURCES_DATA));
         }
         cursor.close();
         return res;
