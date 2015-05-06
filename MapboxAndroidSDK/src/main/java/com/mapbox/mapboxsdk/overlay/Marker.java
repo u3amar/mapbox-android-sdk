@@ -8,7 +8,9 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+
 import com.mapbox.mapboxsdk.R;
+import com.mapbox.mapboxsdk.clustering.ClusterItem;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.util.BitmapUtils;
 import com.mapbox.mapboxsdk.views.InfoWindow;
@@ -19,7 +21,7 @@ import com.mapbox.mapboxsdk.views.util.constants.MapViewConstants;
 /**
  * Immutable class describing a LatLng with a Title and a Description.
  */
-public class Marker implements MapViewConstants {
+public class Marker implements MapViewConstants, ClusterItem {
 
     private static String TAG = "Marker";
 
@@ -28,13 +30,12 @@ public class Marker implements MapViewConstants {
     public static final int ITEM_STATE_SELECTED_MASK = 2;
 
     private int group = 0;
-    private boolean mClustered;
 
     private final RectF mMyLocationRect = new RectF(0, 0, 0, 0);
     private final RectF mMyLocationPreviousRect = new RectF(0, 0, 0, 0);
     protected final PointF mCurMapCoords = new PointF();
 
-    private Context context;
+    protected Context context;
     private MapView mapView;
     private Icon icon;
     private boolean isUsingMakiIcon = true;
@@ -55,13 +56,14 @@ public class Marker implements MapViewConstants {
     private ItemizedOverlay mParentHolder;
 
     private Drawable mDefaultPinDrawable;
-    private int mDefaultPinRes = R.drawable.defpin;
+    protected int mDefaultPinRes = R.drawable.defpin;
 
     /**
      * Construct a new Marker, given title, description, and place
-     * @param title Marker title
+     *
+     * @param title       Marker title
      * @param description Marker description
-     * @param latLng Marker position
+     * @param latLng      Marker position
      */
     public Marker(String title, String description, LatLng latLng) {
         this(null, title, description, latLng);
@@ -70,10 +72,10 @@ public class Marker implements MapViewConstants {
     /**
      * Initialize a new marker object, adding it to a MapView and attaching a tooltip
      *
-     * @param mv a mapview
-     * @param aTitle the title of the marker, in a potential tooltip
+     * @param mv           a mapview
+     * @param aTitle       the title of the marker, in a potential tooltip
      * @param aDescription the description of the marker, in a tooltip
-     * @param aLatLng the location of the marker
+     * @param aLatLng      the location of the marker
      */
     public Marker(MapView mv, String aTitle, String aDescription, LatLng aLatLng) {
         super();
@@ -92,6 +94,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Default Marker image loaded from Library
+     *
      * @return BitMapDrawable of the Default Marker image
      */
     public Drawable getDefaultPinDrawable() {
@@ -104,6 +107,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Attach this marker to a given MapView and that MapView's context
+     *
      * @param mv the MapView to add this marker to
      * @return Marker
      */
@@ -118,6 +122,7 @@ public class Marker implements MapViewConstants {
     /**
      * Determine if this marker has a title, description, subdescription,
      * or image that could be displayed
+     *
      * @return true if the marker has content
      */
     public boolean hasContent() {
@@ -135,6 +140,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Get this marker's tooltip, creating it if it doesn't exist yet.
+     *
      * @param mv MapView
      * @return InfoWindow
      */
@@ -159,6 +165,11 @@ public class Marker implements MapViewConstants {
         if (mParentHolder != null) {
             mParentHolder.blurItem(this);
         }
+    }
+
+    @Override
+    public LatLng getPosition() {
+        return mLatLng;
     }
 
     /**
@@ -207,6 +218,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Set the centerpoint of this marker in geographical coordinates
+     *
      * @param point
      */
     public void setPoint(LatLng point) {
@@ -216,6 +228,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Set the description attached to this marker
+     *
      * @return
      */
     public String getDescription() {
@@ -224,6 +237,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Set the sub-description attached to this marker
+     *
      * @return
      */
     public String getSubDescription() {
@@ -232,6 +246,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Set the image attached to this marker
+     *
      * @return
      */
     public Drawable getImage() {
@@ -252,6 +267,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Gets the image (Drawable) used for the Marker's image
+     *
      * @param stateBitset State Of Marker (@see #ITEM_STATE_FOCUSED_MASK , @see #ITEM_STATE_PRESSED_MASK, @see #ITEM_STATE_SELECTED_MASK)
      * @return marker drawable corresponding to stateBitset
      */
@@ -268,7 +284,8 @@ public class Marker implements MapViewConstants {
 
     /**
      * Set a custom image to be used as the Marker's image
-     * @param marker Drawable resource to be used as Marker image
+     *
+     * @param marker     Drawable resource to be used as Marker image
      * @param isMakiIcon True if Maki Icon, False if not (ex: Custom Image)
      */
     public void setMarker(final Drawable marker, boolean isMakiIcon) {
@@ -283,6 +300,7 @@ public class Marker implements MapViewConstants {
     /**
      * Set a custom image to be used as the Marker's image
      * NOTE: Convenience method for setting a custom image as the marker
+     *
      * @param marker Drawable resource to be used as Marker image
      */
     public void setMarker(final Drawable marker) {
@@ -291,6 +309,7 @@ public class Marker implements MapViewConstants {
 
     /**
      * Sets the marker hotspot
+     *
      * @param place Hotspot Location @see #HotspotPlace
      */
     public void setHotspot(HotspotPlace place) {
@@ -361,7 +380,9 @@ public class Marker implements MapViewConstants {
             states[index++] = android.R.attr.state_focused;
         }
 
-        drawable.setState(states);
+        if (drawable != null) {
+            drawable.setState(states);
+        }
     }
 
     public Drawable getDrawable() {
@@ -398,8 +419,9 @@ public class Marker implements MapViewConstants {
 
     /**
      * Get the current position of the marker in pixels
+     *
      * @param projection Projection
-     * @param reuse PointF to reuse
+     * @param reuse      PointF to reuse
      */
     public PointF getPositionOnScreen(final Projection projection, final PointF reuse) {
         return projection.toPixels(mCurMapCoords, reuse);
