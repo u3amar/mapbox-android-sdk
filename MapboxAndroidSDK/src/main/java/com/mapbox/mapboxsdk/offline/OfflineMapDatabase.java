@@ -165,12 +165,16 @@ public class OfflineMapDatabase implements MapboxConstants {
         if (db == null) {
             db = OfflineDatabaseManager.getOfflineDatabaseManager(context).getOfflineDatabaseHandlerForMapId(mapID).getReadableDatabase();
         }
+        if (!db.isOpen()) {
+            db = null;
+        }
         return db;
     }
 
     public void closeDatabase() {
-        if (db != null) {
+        if (db != null && db.isOpen()) {
             db.close();
         }
+        db = null;
     }
 }
