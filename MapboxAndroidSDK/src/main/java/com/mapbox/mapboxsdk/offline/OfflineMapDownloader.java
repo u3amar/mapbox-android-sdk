@@ -649,12 +649,6 @@ public class OfflineMapDownloader implements MapboxConstants {
         metadataDictionary.put("includesMetadata", this.includesMetadata ? "YES" : "NO");
         metadataDictionary.put("includesMarkers", this.includesMarkers ? "YES" : "NO");
         metadataDictionary.put("imageQuality", String.format(MAPBOX_LOCALE, "%d", this.imageQuality.getValue()));
-        metadataDictionary.put("region_latitude", String.format(MAPBOX_LOCALE, "%.8f", this.mapRegion.getCenter().getLatitude()));
-        metadataDictionary.put("region_longitude", String.format(MAPBOX_LOCALE, "%.8f", this.mapRegion.getCenter().getLongitude()));
-        metadataDictionary.put("region_latitude_delta", String.format(MAPBOX_LOCALE, "%.8f", this.mapRegion.getSpan().getLatitudeSpan()));
-        metadataDictionary.put("region_longitude_delta", String.format(MAPBOX_LOCALE, "%.8f", this.mapRegion.getSpan().getLongitudeSpan()));
-        metadataDictionary.put("minimumZ", String.format(MAPBOX_LOCALE, "%d", this.minimumZ));
-        metadataDictionary.put("maximumZ", String.format(MAPBOX_LOCALE, "%d", this.maximumZ));
 
         final ArrayList<String> urls = new ArrayList<String>();
 
