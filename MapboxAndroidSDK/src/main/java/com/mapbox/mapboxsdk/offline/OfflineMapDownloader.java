@@ -9,7 +9,6 @@ import android.os.AsyncTask;
 import android.text.TextUtils;
 import android.util.Log;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
-import com.mapbox.mapboxsdk.constants.MathConstants;
 import com.mapbox.mapboxsdk.geometry.CoordinateRegion;
 import com.mapbox.mapboxsdk.util.AppUtils;
 import com.mapbox.mapboxsdk.util.DataLoadingUtils;
