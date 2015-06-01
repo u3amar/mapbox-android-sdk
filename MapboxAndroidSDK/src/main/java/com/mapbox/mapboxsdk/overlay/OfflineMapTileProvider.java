@@ -11,6 +11,8 @@ import com.mapbox.mapboxsdk.tileprovider.MapTileLayerBase;
 import com.mapbox.mapboxsdk.util.MapboxUtils;
 import java.io.ByteArrayInputStream;
 
+import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
+
 public class OfflineMapTileProvider extends MapTileLayerBase implements MapboxConstants {
 
     private static final String TAG = "OfflineMapTileProvider";
@@ -25,6 +27,10 @@ public class OfflineMapTileProvider extends MapTileLayerBase implements MapboxCo
     @Override
     public Drawable getMapTile(MapTile pTile, boolean allowRemote) {
         try {
+            CacheableBitmapDrawable cacheable = mTileCache.getMapTile(pTile);
+            if (cacheable != null)
+                return cacheable;
+
             // Build URL to match url in database
             String url = MapboxUtils.getMapTileURL(context, offlineMapDatabase.getMapID(), pTile.getZ(), pTile.getX(), pTile.getY(), offlineMapDatabase.getImageQuality());
             byte[] data = offlineMapDatabase.dataForURL(url);
@@ -33,8 +39,10 @@ public class OfflineMapTileProvider extends MapTileLayerBase implements MapboxCo
                 // No data found, just return null so that default gray screen is displayed.
                 return null;
             }
+
             // Return the tile image
-            return new BitmapDrawable(context.getResources(), new ByteArrayInputStream(data));
+            BitmapDrawable drawable = new BitmapDrawable(context.getResources(), new ByteArrayInputStream(data));
+            return mTileCache.putTile(pTile, drawable);
         } catch (OfflineDatabaseException e) {
             e.printStackTrace();
         }
@@ -46,6 +54,9 @@ public class OfflineMapTileProvider extends MapTileLayerBase implements MapboxCo
     public void detach() {
         if (getTileSource() != null) {
             getTileSource().detach();
+        }
+        if (offlineMapDatabase != null) {
+            offlineMapDatabase.closeDatabase();
         }
     }
 }
