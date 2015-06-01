@@ -28,8 +28,9 @@ public class OfflineMapTileProvider extends MapTileLayerBase implements MapboxCo
     public Drawable getMapTile(MapTile pTile, boolean allowRemote) {
         try {
             CacheableBitmapDrawable cacheable = mTileCache.getMapTile(pTile);
-            if (cacheable != null)
+            if (cacheable != null) {
                 return cacheable;
+            }
 
             // Build URL to match url in database
             String url = MapboxUtils.getMapTileURL(context, offlineMapDatabase.getMapID(), pTile.getZ(), pTile.getX(), pTile.getY(), offlineMapDatabase.getImageQuality());

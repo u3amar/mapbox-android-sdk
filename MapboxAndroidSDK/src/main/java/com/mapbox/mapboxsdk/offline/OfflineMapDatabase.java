@@ -7,9 +7,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.exceptions.OfflineDatabaseException;
-import com.mapbox.mapboxsdk.geometry.CoordinateRegion;
-import com.mapbox.mapboxsdk.geometry.CoordinateSpan;
-import com.mapbox.mapboxsdk.geometry.LatLng;
 import java.util.Date;
 
 public class OfflineMapDatabase implements MapboxConstants {
@@ -122,14 +119,16 @@ public class OfflineMapDatabase implements MapboxConstants {
         }
 
         SQLiteDatabase db = database();
-        if (db == null)
+        if (db == null) {
             return null;
+        }
 
         String query = "SELECT " + OfflineDatabaseHandler.FIELD_METADATA_VALUE + " FROM " + OfflineDatabaseHandler.TABLE_METADATA + " WHERE " + OfflineDatabaseHandler.FIELD_METADATA_NAME + "=?;";
         String[] selectionArgs = new String[] { name };
         Cursor cursor = db.rawQuery(query, selectionArgs);
-        if (cursor == null)
+        if (cursor == null) {
             return null;
+        }
 
         String res = null;
         if (cursor.moveToFirst()) {
@@ -144,14 +143,16 @@ public class OfflineMapDatabase implements MapboxConstants {
             return null;
         }
         SQLiteDatabase db = database();
-        if (db == null)
+        if (db == null) {
             return null;
+        }
 
         String query = "SELECT " + OfflineDatabaseHandler.FIELD_RESOURCES_DATA + " FROM " + OfflineDatabaseHandler.TABLE_RESOURCES + " WHERE " + OfflineDatabaseHandler.FIELD_RESOURCES_URL + "=?;";
         String[] selectionArgs = new String[] { url };
         Cursor cursor = db.rawQuery(query, selectionArgs);
-        if (cursor == null)
+        if (cursor == null) {
             return null;
+        }
 
         byte[] res = null;
         if (cursor.moveToFirst()) {
