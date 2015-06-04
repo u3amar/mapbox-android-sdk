@@ -18,14 +18,14 @@ public class MBTilesTestFragment extends Fragment
 
         MapView mv = (MapView) view.findViewById(R.id.mbTilesMap);
 
-        TileLayer mbTileLayer = new MBTilesLayer(getActivity(), "test.MBTiles");
+        TileLayer mbTileLayer = new MBTilesLayer(getActivity(), "road-trip.mbtiles");
         mv.setTileSource(new ITileLayer[] {mbTileLayer});
 
         mv.setScrollableAreaLimit(mbTileLayer.getBoundingBox());
         mv.setMinZoomLevel(mv.getTileProvider().getMinimumZoomLevel());
         mv.setMaxZoomLevel(mv.getTileProvider().getMaximumZoomLevel());
         mv.setCenter(mv.getTileProvider().getCenterCoordinate());
-        mv.setZoom(0);
+        mv.setZoom(4);
 
         return view;
     }
