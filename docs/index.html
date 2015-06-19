@@ -34,7 +34,9 @@ navigation:
     <div class='clip row2 fill-light pad2x'>
 {% highlight java %}
 // Create a new MapView passing context and map ID
-MapView mapView = new MapView(this, "username.mapid");
+MapView mapView = new MapView(this);
+mapView.setAccessToken("ACCESS_TOKEN");
+mapView.setTileSource(new MapboxTileLayer("username.mapid"));
 {% endhighlight %}
     </div>
   </div>
