@@ -143,14 +143,18 @@ public class WebSourceTileLayer extends TileLayer implements MapboxConstants {
                 //create the CacheableBitmapDrawable object from the bitmap
                 result = cache.createCacheableBitmapDrawable(resultBitmap, aTile);
 
+                //pass it to onTileLoaded callback for customization, and return the customized CacheableBitmapDrawable object
+                result = listener2.onTileLoaded(result);
+
+                //null pointer checking
                 if (result != null) {
-                    //pass it to onTileLoaded callback for customization, and return the customized CacheableBitmapDrawable object
-                    result = listener2.onTileLoaded(result);
+                    int resultWidth = result.getIntrinsicWidth();
+                    int resultHeight = result.getIntrinsicHeight();
 
                     //convert the drawable updated in onTileLoaded callback to a bitmap
-                    Bitmap bitmapToCache = Bitmap.createBitmap(result.getIntrinsicWidth(), result.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                    Bitmap bitmapToCache = Bitmap.createBitmap(resultWidth, resultHeight, Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(bitmapToCache);
-                    result.setBounds(0, 0, result.getIntrinsicWidth(), result.getIntrinsicHeight());
+                    result.setBounds(0, 0, resultWidth, resultHeight);
                     result.draw(canvas);
 
                     cache.putTileBitmap(aTile, bitmapToCache);
