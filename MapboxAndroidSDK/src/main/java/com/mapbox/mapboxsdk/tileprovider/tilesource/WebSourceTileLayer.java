@@ -142,16 +142,19 @@ public class WebSourceTileLayer extends TileLayer implements MapboxConstants {
             if (listener2 != null) {
                 //create the CacheableBitmapDrawable object from the bitmap
                 result = cache.createCacheableBitmapDrawable(resultBitmap, aTile);
-                //pass it to onTileLoaded callback for customization, and return the customized CacheableBitmapDrawable object
-                result = listener2.onTileLoaded(result);
 
-                //convert the drawable updated in onTileLoaded callback to a bitmap
-                Bitmap bitmapToCache = Bitmap.createBitmap(result.getIntrinsicWidth(), result.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-                Canvas canvas = new Canvas(bitmapToCache);
-                result.setBounds(0, 0, result.getIntrinsicWidth(), result.getIntrinsicHeight());
-                result.draw(canvas);
+                if (result != null) {
+                    //pass it to onTileLoaded callback for customization, and return the customized CacheableBitmapDrawable object
+                    result = listener2.onTileLoaded(result);
 
-                cache.putTileBitmap(aTile, bitmapToCache);
+                    //convert the drawable updated in onTileLoaded callback to a bitmap
+                    Bitmap bitmapToCache = Bitmap.createBitmap(result.getIntrinsicWidth(), result.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmapToCache);
+                    result.setBounds(0, 0, result.getIntrinsicWidth(), result.getIntrinsicHeight());
+                    result.draw(canvas);
+
+                    cache.putTileBitmap(aTile, bitmapToCache);
+                }
             } else {
                 if (resultBitmap != null) {
                     //get drawable by putting it into cache (memory and disk)
