@@ -123,6 +123,11 @@ cd <PROJECT_ROOT>
 
 **Don't forget to then also include the dependencies from `MapboxAndroidSDK / build.gradle` in your classpath!**
 
+## Mapbox GL Coming Soon
+
+Please note that we'll be releasing Mapbox GL for Android in the coming months.  It's the vector-based future of our rendering technology and will replace the Mapbox Android SDK.  We are working to provide a clear upgrade path between existing toolsets and GL as it matures.  For more information please see the [Mapbox Mobile](https://www.mapbox.com/mobile/) Web page as well as [Mapbox GL project repository](https://github.com/mapbox/mapbox-gl-native/).
+
+
 ## Changes from OSMDroid
 
 This project is a fork of OSMDroid, but is significantly different as the result of major refactoring and rethinking.
