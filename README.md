@@ -11,6 +11,10 @@ This is a fork of [osmdroid](http://code.google.com/p/osmdroid/), so the entire
 core is open source: it doesn't depend on the Google Maps SDK or any components
 outside of [AOSP](https://source.android.com/) that would require the [Google Play Services](https://developer.android.com/google/play-services/).
 
+## Mapbox GL Coming Soon
+
+Please note that we'll be releasing Mapbox GL for Android in the coming months.  It's the vector-based future of our rendering technology and will replace the Mapbox Android SDK.  We are working to provide a clear upgrade path between existing toolsets and GL as it matures.  For more information please see the [Mapbox Mobile](https://www.mapbox.com/mobile/) Web page as well as [Mapbox GL project repository](https://github.com/mapbox/mapbox-gl-native/).
+
 ## Installation
 
 We recommend using the Mapbox Android SDK with [Gradle](http://www.gradle.org/):
@@ -122,11 +126,6 @@ cd <PROJECT_ROOT>
 ```
 
 **Don't forget to then also include the dependencies from `MapboxAndroidSDK / build.gradle` in your classpath!**
-
-## Mapbox GL Coming Soon
-
-Please note that we'll be releasing Mapbox GL for Android in the coming months.  It's the vector-based future of our rendering technology and will replace the Mapbox Android SDK.  We are working to provide a clear upgrade path between existing toolsets and GL as it matures.  For more information please see the [Mapbox Mobile](https://www.mapbox.com/mobile/) Web page as well as [Mapbox GL project repository](https://github.com/mapbox/mapbox-gl-native/).
-
 
 ## Changes from OSMDroid
 
