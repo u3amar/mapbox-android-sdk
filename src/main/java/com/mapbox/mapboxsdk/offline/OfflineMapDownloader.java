@@ -46,10 +46,23 @@ public class OfflineMapDownloader implements MapboxConstants
     private static OfflineMapDownloader offlineMapDownloader;
 
     private ArrayList<OfflineMapDownloaderListener> listeners;
-
     private Context context;
-
     private SQLiteDatabase db;
+
+    private String uniqueID;
+    private String mapID;
+    private boolean includesMetadata;
+    private boolean includesMarkers;
+    private RasterImageQuality imageQuality;
+    private CoordinateRegion mapRegion;
+    private int minimumZ;
+    private int maximumZ;
+    private MBXOfflineMapDownloaderState state;
+    private int totalFilesWritten;
+    private int totalFilesExpectedToWrite;
+
+    private ArrayList<OfflineMapDatabase> mutableOfflineMapDatabases;
+    private OfflineMapDownloadTaskManager currentDownloadTask;
 
     /**
      * The possible states of the offline map downloader.
@@ -78,6 +91,7 @@ public class OfflineMapDownloader implements MapboxConstants
     {
         private Iterator<String> itr;
         private int concurrentCount;
+        private ArrayList<AsyncTask<String, Void, Void>> downloadTasks = new ArrayList<>();
 
         public OfflineMapDownloadTaskManager(Iterator<String> itr, int concurrentCount)
         {
@@ -93,18 +107,21 @@ public class OfflineMapDownloader implements MapboxConstants
             }
         }
 
-        private void startDownloadTask()
+        public void cancel()
+        {
+            for (AsyncTask task : downloadTasks)
+            {
+                task.cancel(true);
+            }
+        }
+
+        private synchronized void startDownloadTask()
         {
             if (!itr.hasNext())
             {
                 return;
             }
-/*
-            if (!NetworkUtils.isNetworkAvailable(context)) {
-                Log.w(TAG, "Network is no longer available.");
-//                    [self notifyDelegateOfNetworkConnectivityError:error];
-            }
-*/
+
             AsyncTask<String, Void, Void> task = new AsyncTask<String, Void, Void>()
             {
                 @Override
@@ -154,6 +171,7 @@ public class OfflineMapDownloader implements MapboxConstants
                             }
                             conn.disconnect();
                         }
+
                         sqliteSaveDownloadedData(bais.toByteArray(), url);
                     }
                     catch (IOException e)
@@ -169,50 +187,26 @@ public class OfflineMapDownloader implements MapboxConstants
                         }
                     }
 
-                    startDownloadTask();
+                    if (!isCancelled())
+                        startDownloadTask();
                     return null;
                 }
             };
+
             task.execute(itr.next());
+            downloadTasks.add(task);
         }
     }
-
-    private String uniqueID;
-    private String mapID;
-    private boolean includesMetadata;
-    private boolean includesMarkers;
-    private RasterImageQuality imageQuality;
-    private CoordinateRegion mapRegion;
-    private int minimumZ;
-    private int maximumZ;
-    private MBXOfflineMapDownloaderState state;
-    private int totalFilesWritten;
-    private int totalFilesExpectedToWrite;
-
-
-    private ArrayList<OfflineMapDatabase> mutableOfflineMapDatabases;
-
-/*
-    // Don't appear to be needed as there's one database per app for offline maps
-    @property (nonatomic) NSString *partialDatabasePath;
-    @property (nonatomic) NSURL *offlineMapDirectory;
-
-    // Don't appear to be needed as as Android and Mapbox Android SDK provide these
-    @property (nonatomic) NSOperationQueue *backgroundWorkQueue;
-    @property (nonatomic) NSOperationQueue *sqliteQueue;
-    @property (nonatomic) NSURLSession *dataSession;
-    @property (nonatomic) NSInteger activeDataSessionTasks;
-*/
-
 
     private OfflineMapDownloader(Context context)
     {
         super();
-        this.context = context;
 
+        this.context = context;
         listeners = new ArrayList<OfflineMapDownloaderListener>();
 
         mutableOfflineMapDatabases = new ArrayList<OfflineMapDatabase>();
+
         // Load OfflineMapDatabases from File System
         ContextWrapper cw = new ContextWrapper(context);
         for (String s : cw.databaseList())
@@ -238,6 +232,7 @@ public class OfflineMapDownloader implements MapboxConstants
         {
             offlineMapDownloader = new OfflineMapDownloader(context);
         }
+
         return offlineMapDownloader;
     }
 
@@ -310,18 +305,12 @@ public class OfflineMapDownloader implements MapboxConstants
             listener.completionOfOfflineDatabaseMap(offlineMap);
         }
     }
-/*
-    Implementation: download urls
-*/
 
+    /*
+        Implementation: download urls
+    */
     public OfflineMapDatabase completeDatabaseAndInstantiateOfflineMapWithError()
     {
-/*
-        if (AppUtils.runningOnMainThread()) {
-            Log.w(TAG, "completeDatabaseAndInstantiateOfflineMapWithError() running on main thread.  Returning null.");
-            return null;
-        }
-*/
         // Rename database file (remove -PARTIAL) and update path in db object, update path in OfflineMapDatabase, create new Handler
         SQLiteDatabase db = database();
         String dbPath = db.getPath();
@@ -341,51 +330,19 @@ public class OfflineMapDownloader implements MapboxConstants
 
         // Create DB object and return
         OfflineMapDatabase offlineMapDatabase = new OfflineMapDatabase(context, mapID);
+
         // Initialized with data from database
         offlineMapDatabase.initializeDatabase();
         return offlineMapDatabase;
-
-        // Create new OfflineMapDatabase and load with recently downloaded data
-/*
-        // Rename the file using a unique prefix
-        //
-        CFUUIDRef uuid = CFUUIDCreate(kCFAllocatorDefault);
-        CFStringRef uuidString = CFUUIDCreateString(kCFAllocatorDefault, uuid);
-        NSString *newFilename = [NSString stringWithFormat:@"%@.complete",uuidString];
-        NSString *newPath = [[_offlineMapDirectory URLByAppendingPathComponent:newFilename] path];
-        CFRelease(uuidString);
-        CFRelease(uuid);
-        [[NSFileManager defaultManager] moveItemAtPath:_partialDatabasePath toPath:newPath error:error];
-
-        // If the move worked, instantiate and return offline map database
-        //
-        if(error && *error)
-        {
-            return nil;
-        }
-        else
-        {
-            return [[MBXOfflineMapDatabase alloc] initWithContentsOfFile:newPath];
-        }
-*/
     }
 
 
     public void startDownloading()
     {
-/*
-        // Shouldn't need to check as all downloading will happen in background thread
-        if (AppUtils.runningOnMainThread()) {
-            Log.w(TAG, "startDownloading() is running on main thread.  Returning.");
-            return;
-        }
-*/
-
         // Update expected files numbers (totalFilesExpectedToWrite and totalFilesWritten)
         sqliteQueryWrittenAndExpectedCountsWithError();
         Log.d(TAG, String.format(MAPBOX_LOCALE, "totalFilesExpectedToWrite = %d, totalFilesWritten = %d", this.totalFilesExpectedToWrite, this.totalFilesWritten));
 
-//        [_sqliteQueue addOperationWithBlock:^{
         // Get the actual URLs
         Iterator<String> urlIter = sqliteReadOfflineMapURLsToBeDownloadedLimit(-1);
         if (urlIter == null)
@@ -402,8 +359,8 @@ public class OfflineMapDownloader implements MapboxConstants
             return;
         }
 
-        OfflineMapDownloadTaskManager manager = new OfflineMapDownloadTaskManager(urlIter, 8);
-        manager.start();
+        currentDownloadTask = new OfflineMapDownloadTaskManager(urlIter, 8);
+        currentDownloadTask.start();
     }
 
 /*
@@ -574,7 +531,6 @@ public class OfflineMapDownloader implements MapboxConstants
         //       thread as part of init. This is also meant to be used in other contexts throught the normal serial operation queue.
 
         // Calculate how many files need to be written in total and how many of them have been written already
-        //
         String query = String.format(MAPBOX_LOCALE,
                 "SELECT COUNT(%s) AS totalFilesExpectedToWrite, (SELECT COUNT(%s) FROM %s WHERE %s IS NOT NULL) AS totalFilesWritten FROM %s;",
                 OfflineDatabaseHandler.FIELD_RESOURCES_URL, OfflineDatabaseHandler.FIELD_RESOURCES_URL, OfflineDatabaseHandler.TABLE_RESOURCES,
@@ -603,15 +559,6 @@ public class OfflineMapDownloader implements MapboxConstants
         boolean success = false;
 
         // Build a query to populate the database (map metadata and list of map resource urls)
-        //
-/*
-        NSMutableString *query = [[NSMutableString alloc] init];
-        [query appendString:@"PRAGMA foreign_keys=ON;\n"];
-        [query appendString:@"BEGIN TRANSACTION;\n"];
-        [query appendString:@"CREATE TABLE metadata (name TEXT UNIQUE, value TEXT);\n"];
-        [query appendString:@"CREATE TABLE data (id INTEGER PRIMARY KEY, value BLOB);\n"];
-        [query appendString:@"CREATE TABLE resources (url TEXT UNIQUE, status TEXT, id INTEGER REFERENCES data);\n"];
-*/
         SQLiteDatabase db = database();
         db.beginTransaction();
         for (String key : metadata.keySet())
@@ -621,12 +568,14 @@ public class OfflineMapDownloader implements MapboxConstants
             cv.put(OfflineDatabaseHandler.FIELD_METADATA_VALUE, metadata.get(key));
             db.replace(OfflineDatabaseHandler.TABLE_METADATA, null, cv);
         }
+
         for (String url : urlStrings)
         {
             ContentValues cv = new ContentValues();
             cv.put(OfflineDatabaseHandler.FIELD_RESOURCES_URL, url);
             db.insert(OfflineDatabaseHandler.TABLE_RESOURCES, null, cv);
         }
+
         for (int generatedIndex = 0; generatedIndex < generator.getURLCount(); generatedIndex++)
         {
             ContentValues cv = new ContentValues();
@@ -634,44 +583,12 @@ public class OfflineMapDownloader implements MapboxConstants
             cv.put(OfflineDatabaseHandler.FIELD_RESOURCES_URL, url);
             db.insert(OfflineDatabaseHandler.TABLE_RESOURCES, null, cv);
         }
+
         db.setTransactionSuccessful();
         db.endTransaction();
         this.totalFilesExpectedToWrite = urlStrings.size() + generator.getURLCount();
         this.totalFilesWritten = 0;
         success = true;
-/*
-        // Open the database read-write and multi-threaded. The slightly obscure c-style variable names here and below are
-        // used to stay consistent with the sqlite documentaion.
-        sqlite3 *db;
-        int rc;
-        const char *filename = [_partialDatabasePath cStringUsingEncoding:NSUTF8StringEncoding];
-        rc = sqlite3_open_v2(filename, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
-        if (rc)
-        {
-            // Opening the database failed... something is very wrong.
-            //
-            if(error != NULL)
-            {
-                *error = [NSError mbx_errorCannotOpenOfflineMapDatabase:_partialDatabasePath sqliteError:sqlite3_errmsg(db)];
-            }
-            sqlite3_close(db);
-        }
-        else
-        {
-            // Success! Creating the database file worked, so now populate the tables we'll need to hold the offline map
-            //
-            const char *zSql = [query cStringUsingEncoding:NSUTF8StringEncoding];
-            char *errmsg;
-            sqlite3_exec(db, zSql, NULL, NULL, &errmsg);
-            if(error && errmsg != NULL)
-            {
-                *error = [NSError mbx_errorQueryFailedForOfflineMapDatabase:_partialDatabasePath sqliteError:errmsg];
-                sqlite3_free(errmsg);
-            }
-            sqlite3_close(db);
-            success = YES;
-        }
-*/
         return success;
     }
 
@@ -705,12 +622,7 @@ public class OfflineMapDownloader implements MapboxConstants
             return;
         }
 
-//        [self setUpNewDataSession];
-
-//        [_backgroundWorkQueue addOperationWithBlock:^{
-
         // Start a download job to retrieve all the resources needed for using the specified map offline
-        //
         this.uniqueID = UUID.randomUUID().toString();
         this.mapID = mapID;
         this.includesMetadata = includeMetadata;
@@ -720,7 +632,6 @@ public class OfflineMapDownloader implements MapboxConstants
         this.minimumZ = minimumZ;
         this.maximumZ = maximumZ;
         this.state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning;
-//        [self notifyDelegateOfStateChange];
 
         final Hashtable<String, String> metadataDictionary = new Hashtable<String, String>();
         metadataDictionary.put("uniqueID", this.uniqueID);
@@ -734,18 +645,17 @@ public class OfflineMapDownloader implements MapboxConstants
         String dataName = "features.json";    // Only using API V4 for now
 
         // Include URLs for the metadata and markers json if applicable
-        //
         if (includeMetadata)
         {
             urls.add(String.format(MAPBOX_LOCALE, MAPBOX_BASE_URL_V4 + "%s.json?secure&access_token=%s", this.mapID, MapboxUtils.getAccessToken()));
         }
+
         if (includeMarkers)
         {
             urls.add(String.format(MAPBOX_LOCALE, MAPBOX_BASE_URL_V4 + "%s/%s?access_token=%s", this.mapID, dataName, MapboxUtils.getAccessToken()));
         }
 
         // Loop through the zoom levels and lat/lon bounds to generate a list of urls which should be included in the offline map
-        //
         double minLat = this.mapRegion.getCenter().getLatitude() - (this.mapRegion.getSpan().getLatitudeSpan() / 2.0);
         double maxLat = minLat + this.mapRegion.getSpan().getLatitudeSpan();
         double minLon = this.mapRegion.getCenter().getLongitude() - (this.mapRegion.getSpan().getLongitudeSpan() / 2.0);
@@ -754,7 +664,6 @@ public class OfflineMapDownloader implements MapboxConstants
         Log.i(TAG, "Number of URLs so far: " + (urls.size() + generator.getURLCount()));
 
         // Determine if we need to add marker icon urls (i.e. parse markers.geojson/features.json), and if so, add them
-        //
         if (includeMarkers)
         {
             String dName = "markers.geojson";
@@ -766,12 +675,10 @@ public class OfflineMapDownloader implements MapboxConstants
                 // Since we must fetch and parse markers.geojson/features.json in order to determine which marker icons need to be
                 // added to the list of urls to download, the lack of network connectivity is a non-recoverable error
                 // here.
-                //
-                // TODO
-/*
-                [self notifyDelegateOfNetworkConnectivityError:error];
-                [self cancelImmediatelyWithError:error];
-*/
+
+                String error = "Network connectivity error. Shutting down download";
+                notifyDelegateOfNetworkConnectivityError(new Throwable(error));
+                cancelImmediatelyWithError(error);
                 return;
             }
 
@@ -796,7 +703,7 @@ public class OfflineMapDownloader implements MapboxConstants
                         // The marker geojson was successfully retrieved, so parse it for marker icons. Note that we shouldn't
                         // try to save it here, because it may already be in the download queue and saving it twice will mess
                         // up the count of urls to be downloaded!
-                        //
+
                         Set<String> markerIconURLStrings = new HashSet<String>();
                         markerIconURLStrings.addAll(parseMarkerIconURLStringsFromGeojsonData(jsonText));
                         Log.i(TAG, "Number of markerIconURLs = " + markerIconURLStrings.size());
@@ -838,11 +745,13 @@ public class OfflineMapDownloader implements MapboxConstants
                     startDownloadProcess(metadataDictionary, urls, generator);
                 }
             };
+
             foo.execute();
         }
         else
         {
             Log.i(TAG, "No marker icons to worry about, so just start downloading.");
+
             // There aren't any marker icons to worry about, so just create database and start downloading
             startDownloadProcess(metadataDictionary, urls, generator);
         }
@@ -868,6 +777,7 @@ public class OfflineMapDownloader implements MapboxConstants
                     closeDatabase();
                     return null;
                 }
+
                 notifyDelegateOfInitialCount();
                 startDownloading();
                 return null;
@@ -935,7 +845,16 @@ public class OfflineMapDownloader implements MapboxConstants
 
     public void cancelImmediatelyWithError(String error)
     {
-        // TODO
+        state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateCanceling;
+        notifyDelegateOfStateChange();
+        totalFilesWritten = 0;
+        totalFilesExpectedToWrite = 0;
+
+        completeDatabaseAndInstantiateOfflineMapWithError();
+        if (currentDownloadTask != null)
+            currentDownloadTask.cancel();
+        state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateAvailable;
+        notifyDelegateOfStateChange();
 /*
         // Creating the database failed for some reason, so clean up and change the state back to available
         //
@@ -1101,6 +1020,7 @@ public class OfflineMapDownloader implements MapboxConstants
         {
             db = OfflineDatabaseManager.getOfflineDatabaseManager(context).getOfflineDatabaseHandlerForMapId(mapID).getWritableDatabase();
         }
+
         return db;
     }
 
