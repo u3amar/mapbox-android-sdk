@@ -1,22 +1,9 @@
-test/bin/
-MapboxAndroidSDK/src/main/gen/
-test/classes/
-src/out/
-test/gen/
-test/out/
-src/gen/
+.gradle
 build/
-.idea/
-src/.idea/
-.gradle/
-test/assets/
-
-local.properties
 *.iml
-.DS_Store
 
-≈gen
+src/main/.classpath
+src/main/.externalToolBuilders/
+src/main/.project
+src/main/build.xml
 
-bin
-
-docs/_build/*/

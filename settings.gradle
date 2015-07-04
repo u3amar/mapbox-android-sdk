@@ -1,4 +1,0 @@
-include ':MapboxAndroidSDK', ':MapboxAndroidSDKTestApp'
-
-//include 'Android-BitmapCache'
-//project(':Android-BitmapCache').projectDir = new File('/Volumes/data/dev/android/Android-BitmapCache/library')
