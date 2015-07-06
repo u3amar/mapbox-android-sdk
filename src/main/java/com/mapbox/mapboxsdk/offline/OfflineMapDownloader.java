@@ -182,13 +182,13 @@ public class OfflineMapDownloader implements MapboxConstants
                     finally
                     {
                         if (conn != null)
-                        {
                             conn.disconnect();
-                        }
                     }
 
                     if (!isCancelled())
                         startDownloadTask();
+
+                    downloadTasks.remove(this);
                     return null;
                 }
             };
@@ -201,11 +201,10 @@ public class OfflineMapDownloader implements MapboxConstants
     private OfflineMapDownloader(Context context)
     {
         super();
-
         this.context = context;
-        listeners = new ArrayList<OfflineMapDownloaderListener>();
 
-        mutableOfflineMapDatabases = new ArrayList<OfflineMapDatabase>();
+        listeners = new ArrayList<>();
+        mutableOfflineMapDatabases = new ArrayList<>();
 
         // Load OfflineMapDatabases from File System
         ContextWrapper cw = new ContextWrapper(context);
@@ -229,9 +228,7 @@ public class OfflineMapDownloader implements MapboxConstants
     public static OfflineMapDownloader getOfflineMapDownloader(Context context)
     {
         if (offlineMapDownloader == null)
-        {
             offlineMapDownloader = new OfflineMapDownloader(context);
-        }
 
         return offlineMapDownloader;
     }
@@ -246,10 +243,9 @@ public class OfflineMapDownloader implements MapboxConstants
         return listeners.remove(listener);
     }
 
-/*
-    Delegate Notifications
-*/
-
+    /*
+        Delegate Notifications
+    */
     public void notifyDelegateOfStateChange()
     {
         for (OfflineMapDownloaderListener listener : listeners)
@@ -363,10 +359,9 @@ public class OfflineMapDownloader implements MapboxConstants
         currentDownloadTask.start();
     }
 
-/*
-    Implementation: sqlite stuff
-*/
-
+    /*
+        Implementation: sqlite stuff
+    */
     public void sqliteSaveDownloadedData(byte[] data, String url)
     {
         if (AppUtils.runningOnMainThread())
@@ -374,12 +369,8 @@ public class OfflineMapDownloader implements MapboxConstants
             Log.w(TAG, "trying to run sqliteSaveDownloadedData() on main thread. Return.");
             return;
         }
-//        assert(_activeDataSessionTasks > 0);
-
-//        [_sqliteQueue addOperationWithBlock:^{
 
         // Bail out if the state has changed to canceling, suspended, or available
-        //
         if (this.state != MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning)
         {
             Log.w(TAG, "sqliteSaveDownloadedData() is not in a Running state so bailing.  State = " + this.state);
@@ -389,11 +380,9 @@ public class OfflineMapDownloader implements MapboxConstants
         // Open the database read-write and multi-threaded. The slightly obscure c-style variable names here and below are
         // used to stay consistent with the sqlite documentaion.
         // Continue by inserting an image blob into the data table
-        //
         SQLiteDatabase db = database();
         db.beginTransaction();
 
-//      String query2 = "INSERT INTO data(value) VALUES(?);";
         ContentValues values = new ContentValues();
         values.put(OfflineDatabaseHandler.FIELD_RESOURCES_URL, url);
         values.put(OfflineDatabaseHandler.FIELD_RESOURCES_DATA, data);
@@ -403,45 +392,15 @@ public class OfflineMapDownloader implements MapboxConstants
         db.setTransactionSuccessful();
         db.endTransaction();
 
-/*
-        if(error)
-        {
-            // Oops, that didn't work. Notify the delegate.
-            //
-            [self notifyDelegateOfSqliteError:error];
-        }
-        else
-        {
-*/
-        // Update the progress
-        //
         this.totalFilesWritten += 1;
         notifyDelegateOfProgress();
         Log.d(TAG, "totalFilesWritten = " + this.totalFilesWritten + "; totalFilesExpectedToWrite = " + this.totalFilesExpectedToWrite);
 
         // If all the downloads are done, clean up and notify the delegate
-        //
         if (this.totalFilesWritten >= this.totalFilesExpectedToWrite)
         {
             finishUpDownloadProcess();
         }
-/*
-        }
-*/
-
-        // If this was the last of a batch of urls in the data session's download queue, and there are more urls
-        // to be downloaded, get another batch of urls from the database and keep working.
-        //
-/*
-        if(activeDataSessionTasks > 0)
-        {
-            _activeDataSessionTasks -= 1;
-        }
-        if(_activeDataSessionTasks == 0 && _totalFilesWritten < _totalFilesExpectedToWrite)
-        {
-            [self startDownloading];
-        }
-*/
     }
 
     private void finishUpDownloadProcess()
@@ -449,16 +408,16 @@ public class OfflineMapDownloader implements MapboxConstants
         if (this.state == MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning)
         {
             Log.i(TAG, "Just finished downloading all materials.  Persist the OfflineMapDatabase, change the state, and call it a day.");
+
             // This is what to do when we've downloaded all the files
-            //
             // Populate OfflineMapDatabase object and persist it
             OfflineMapDatabase offlineMap = completeDatabaseAndInstantiateOfflineMapWithError();
             if (offlineMap != null)
             {
                 this.mutableOfflineMapDatabases.add(offlineMap);
             }
-            notifyDelegateOfCompletionWithOfflineMapDatabase(offlineMap);
 
+            notifyDelegateOfCompletionWithOfflineMapDatabase(offlineMap);
             this.state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateAvailable;
             notifyDelegateOfStateChange();
         }
@@ -473,12 +432,12 @@ public class OfflineMapDownloader implements MapboxConstants
         }
 
         // Read up to limit undownloaded urls from the offline map database
-        //
         String query = String.format(MAPBOX_LOCALE, "SELECT %s FROM %s WHERE %s IS NULL", OfflineDatabaseHandler.FIELD_RESOURCES_URL, OfflineDatabaseHandler.TABLE_RESOURCES, OfflineDatabaseHandler.FIELD_RESOURCES_STATUS);
         if (limit > 0)
         {
             query = query + String.format(MAPBOX_LOCALE, " LIMIT %d", limit);
         }
+
         query = query + ";";
 
         // Open the database
@@ -514,6 +473,7 @@ public class OfflineMapDownloader implements MapboxConstants
                 {
                     cursor.close();
                 }
+
                 return result;
             }
 
@@ -556,8 +516,6 @@ public class OfflineMapDownloader implements MapboxConstants
             return false;
         }
 
-        boolean success = false;
-
         // Build a query to populate the database (map metadata and list of map resource urls)
         SQLiteDatabase db = database();
         db.beginTransaction();
@@ -586,16 +544,15 @@ public class OfflineMapDownloader implements MapboxConstants
 
         db.setTransactionSuccessful();
         db.endTransaction();
+
         this.totalFilesExpectedToWrite = urlStrings.size() + generator.getURLCount();
         this.totalFilesWritten = 0;
-        success = true;
-        return success;
+        return true;
     }
 
-/*
-    API: Begin an offline map download
-*/
-
+    /*
+        API: Begin an offline map download
+    */
     public void beginDownloadingMapID(String mapID, CoordinateRegion mapRegion, Integer minimumZ, Integer maximumZ)
     {
         beginDownloadingMapID(mapID, mapRegion, minimumZ, maximumZ, true, true, RasterImageQuality.MBXRasterImageQualityFull);
@@ -839,130 +796,62 @@ public class OfflineMapDownloader implements MapboxConstants
         }
 
         // Return only the unique icon urls
-        //
         return iconURLStrings;
     }
 
     public void cancelImmediatelyWithError(String error)
     {
+        Log.d(TAG, "Canceling with error: " + error);
         state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateCanceling;
         notifyDelegateOfStateChange();
         totalFilesWritten = 0;
         totalFilesExpectedToWrite = 0;
 
-        completeDatabaseAndInstantiateOfflineMapWithError();
+        removeOfflineMapDatabase(completeDatabaseAndInstantiateOfflineMapWithError());
+
         if (currentDownloadTask != null)
             currentDownloadTask.cancel();
+
+        totalFilesWritten = 0;
+        totalFilesExpectedToWrite = 0;
         state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateAvailable;
         notifyDelegateOfStateChange();
-/*
-        // Creating the database failed for some reason, so clean up and change the state back to available
-        //
-        state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateCanceling;
-        [self notifyDelegateOfStateChange];
-
-        if([_delegate respondsToSelector:@selector(offlineMapDownloader:didCompleteOfflineMapDatabase:withError:)])
-        {
-            dispatch_async(dispatch_get_main_queue(), ^(void){
-                    [_delegate offlineMapDownloader:self didCompleteOfflineMapDatabase:nil withError:error];
-            });
-        }
-
-        [_dataSession invalidateAndCancel];
-        [_sqliteQueue cancelAllOperations];
-
-        [_sqliteQueue addOperationWithBlock:^{
-        [self setUpNewDataSession];
-        _totalFilesWritten = 0;
-        _totalFilesExpectedToWrite = 0;
-
-        [[NSFileManager defaultManager] removeItemAtPath:_partialDatabasePath error:nil];
-
-        state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateAvailable;
-        [self notifyDelegateOfStateChange];
-    }];
-*/
     }
 
-/*
-    API: Control an in-progress offline map download
-*/
-
+    /*
+        API: Control an in-progress offline map download
+    */
     public void cancel()
     {
         Log.d(TAG, "cancel called with state = " + state);
-/*
-        if (state != MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateCanceling && state != MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateAvailable) {
-            // Stop a download job and discard the associated files
-            //
-            [_backgroundWorkQueue addOperationWithBlock:^{
-            _state = MBXOfflineMapDownloaderStateCanceling;
-            [self notifyDelegateOfStateChange];
-
-            [_dataSession invalidateAndCancel];
-            [_sqliteQueue cancelAllOperations];
-
-            [_sqliteQueue addOperationWithBlock:^{
-                [self setUpNewDataSession];
-                _totalFilesWritten = 0;
-                _totalFilesExpectedToWrite = 0;
-                [[NSFileManager defaultManager] removeItemAtPath:_partialDatabasePath error:nil];
-
-                if([_delegate respondsToSelector:@selector(offlineMapDownloader:didCompleteOfflineMapDatabase:withError:)])
-                {
-                    NSError *canceled = [NSError mbx_errorWithCode:MBXMapKitErrorCodeDownloadingCanceled reason:@"The download job was canceled" description:@"Download canceled"];
-                    dispatch_async(dispatch_get_main_queue(), ^(void){
-                            [_delegate offlineMapDownloader:self didCompleteOfflineMapDatabase:nil withError:canceled];
-                    });
-                }
-
-                _state = MBXOfflineMapDownloaderStateAvailable;
-                [self notifyDelegateOfStateChange];
-            }];
-
-            }
-        }
-*/
+        cancelImmediatelyWithError(null);
     }
 
     public void resume()
     {
-        if (state != MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateSuspended)
+        if (state == MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateSuspended)
         {
-            return;
+            state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning;
+            startDownloading();
         }
-/*
-        // Resume a previously suspended download job
-        //
-        [_backgroundWorkQueue addOperationWithBlock:^{
-            _state = MBXOfflineMapDownloaderStateRunning;
-            [self startDownloading];
-            [self notifyDelegateOfStateChange];
-        }];
-*/
     }
 
     public void suspend()
     {
         Log.d(TAG, "suspend called with state = " + state);
-/*
-        if (state == MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning) {
-            // Stop a download job, preserving the necessary state to resume later
-            //
-            [_backgroundWorkQueue addOperationWithBlock:^{
-                [_sqliteQueue cancelAllOperations];
-                _state = MBXOfflineMapDownloaderStateSuspended;
-                _activeDataSessionTasks = 0;
-                [self notifyDelegateOfStateChange];
-            }];
+        if (state == MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning)
+        {
+            state = MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateSuspended;
+            if (currentDownloadTask != null)
+                currentDownloadTask.cancel();
+
+            notifyDelegateOfStateChange();
         }
-*/
     }
 
-/*
-    API: Access or delete completed offline map databases on disk
-*/
-
+    /*
+        API: Access or delete completed offline map databases on disk
+    */
     public ArrayList<OfflineMapDatabase> getMutableOfflineMapDatabases()
     {
         // Return an array with offline map database objects representing each of the *complete* map databases on disk
@@ -984,11 +873,9 @@ public class OfflineMapDownloader implements MapboxConstants
     public boolean removeOfflineMapDatabase(OfflineMapDatabase offlineMapDatabase)
     {
         // Mark the offline map object as invalid in case there are any references to it still floating around
-        //
         offlineMapDatabase.invalidate();
 
         // Remove the offline map object from the array and delete it's backing database
-        //
         mutableOfflineMapDatabases.remove(offlineMapDatabase);
 
         // Remove Offline Database SQLite file

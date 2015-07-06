@@ -5,7 +5,8 @@ import android.text.TextUtils;
 
 import java.util.Hashtable;
 
-public class OfflineDatabaseManager {
+public class OfflineDatabaseManager
+{
 
     private static OfflineDatabaseManager offlineDatabaseManager = null;
 
@@ -13,21 +14,26 @@ public class OfflineDatabaseManager {
 
     private static Context context = null;
 
-    private OfflineDatabaseManager() {
+    private OfflineDatabaseManager()
+    {
         super();
         databaseHandlers = new Hashtable<String, OfflineDatabaseHandler>();
     }
 
-    public static OfflineDatabaseManager getOfflineDatabaseManager(Context ctx) {
-        if (offlineDatabaseManager == null) {
+    public static OfflineDatabaseManager getOfflineDatabaseManager(Context ctx)
+    {
+        if (offlineDatabaseManager == null)
+        {
             offlineDatabaseManager = new OfflineDatabaseManager();
         }
         context = ctx;
         return offlineDatabaseManager;
     }
 
-    public OfflineDatabaseHandler getOfflineDatabaseHandlerForMapId(String mapId) {
-        if (databaseHandlers.containsKey(mapId.toLowerCase())) {
+    public OfflineDatabaseHandler getOfflineDatabaseHandlerForMapId(String mapId)
+    {
+        if (databaseHandlers.containsKey(mapId.toLowerCase()))
+        {
             return databaseHandlers.get(mapId);
         }
 
@@ -36,13 +42,16 @@ public class OfflineDatabaseManager {
         return dbh;
     }
 
-    public OfflineDatabaseHandler getOfflineDatabaseHandlerForMapId(String mapId, boolean fromFileSystem) {
-        if (!fromFileSystem) {
+    public OfflineDatabaseHandler getOfflineDatabaseHandlerForMapId(String mapId, boolean fromFileSystem)
+    {
+        if (!fromFileSystem)
+        {
             return getOfflineDatabaseHandlerForMapId(mapId);
         }
 
         String key = mapId.toLowerCase();
-        if (databaseHandlers.containsKey(key)) {
+        if (databaseHandlers.containsKey(key))
+        {
             return databaseHandlers.get(key);
         }
 
@@ -51,12 +60,15 @@ public class OfflineDatabaseManager {
         return dbh;
     }
 
-    public boolean switchHandlerFromPartialToRegular(String mapId) {
-        if (TextUtils.isEmpty(mapId)) {
+    public boolean switchHandlerFromPartialToRegular(String mapId)
+    {
+        if (TextUtils.isEmpty(mapId))
+        {
             return false;
         }
         String key = mapId.toLowerCase();
-        if (!databaseHandlers.containsKey(key)) {
+        if (!databaseHandlers.containsKey(key))
+        {
             return false;
         }
 
