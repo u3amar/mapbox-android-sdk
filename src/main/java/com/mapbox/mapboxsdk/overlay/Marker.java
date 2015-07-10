@@ -21,8 +21,8 @@ import com.mapbox.mapboxsdk.views.util.constants.MapViewConstants;
 /**
  * Immutable class describing a LatLng with a Title and a Description.
  */
-public class Marker implements MapViewConstants, ClusterItem {
-
+public class Marker implements MapViewConstants, ClusterItem
+{
     private static String TAG = "Marker";
 
     public static final int ITEM_STATE_FOCUSED_MASK = 4;
@@ -39,6 +39,7 @@ public class Marker implements MapViewConstants, ClusterItem {
     private MapView mapView;
     private Icon icon;
     private boolean isUsingMakiIcon = true;
+    private InfoWindow.InfoWindowClickedListener mClickedListener;
 
     protected String mUid;
     protected LatLng mLatLng;
@@ -65,7 +66,8 @@ public class Marker implements MapViewConstants, ClusterItem {
      * @param description Marker description
      * @param latLng      Marker position
      */
-    public Marker(String title, String description, LatLng latLng) {
+    public Marker(String title, String description, LatLng latLng)
+    {
         this(null, title, description, latLng);
     }
 
@@ -77,10 +79,12 @@ public class Marker implements MapViewConstants, ClusterItem {
      * @param aDescription the description of the marker, in a tooltip
      * @param aLatLng      the location of the marker
      */
-    public Marker(MapView mv, String aTitle, String aDescription, LatLng aLatLng) {
+    public Marker(MapView mv, String aTitle, String aDescription, LatLng aLatLng)
+    {
         super();
         this.mapView = mv;
-        if (mv != null) {
+        if (mv != null)
+        {
             this.context = mv.getContext();
         }
         this.setTitle(aTitle);
@@ -97,8 +101,10 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @return BitMapDrawable of the Default Marker image
      */
-    public Drawable getDefaultPinDrawable() {
-        if (mDefaultPinDrawable == null && this.context != null) {
+    public Drawable getDefaultPinDrawable()
+    {
+        if (mDefaultPinDrawable == null && this.context != null)
+        {
             BitmapFactory.Options opts = BitmapUtils.getBitmapOptions(context.getResources().getDisplayMetrics());
             mDefaultPinDrawable = new BitmapDrawable(context.getResources(), BitmapFactory.decodeResource(context.getResources(), mDefaultPinRes, opts));
         }
@@ -111,9 +117,11 @@ public class Marker implements MapViewConstants, ClusterItem {
      * @param mv the MapView to add this marker to
      * @return Marker
      */
-    public Marker addTo(MapView mv) {
+    public Marker addTo(MapView mv)
+    {
         mapView = mv;
-        if (this.context == null) {
+        if (this.context == null)
+        {
             context = mv.getContext();
         }
         return this;
@@ -125,15 +133,19 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @return true if the marker has content
      */
-    public boolean hasContent() {
+    public boolean hasContent()
+    {
         return !TextUtils.isEmpty(this.mTitle) ||
                 !TextUtils.isEmpty(this.mDescription) ||
                 !TextUtils.isEmpty(this.mSubDescription) ||
                 this.mImage != null;
     }
 
-    protected InfoWindow createTooltip(MapView mv) {
-        return new InfoWindow(R.layout.tooltip, mv);
+    protected InfoWindow createTooltip(MapView mv)
+    {
+        InfoWindow window = new InfoWindow(R.layout.tooltip, mv, this);
+        window.setClickedListener(mClickedListener);
+        return window;
     }
 
     private InfoWindow mToolTip;
@@ -144,31 +156,40 @@ public class Marker implements MapViewConstants, ClusterItem {
      * @param mv MapView
      * @return InfoWindow
      */
-    public InfoWindow getToolTip(MapView mv) {
-        if (mToolTip == null || mToolTip.getMapView() != mv) {
+    public InfoWindow getToolTip(MapView mv)
+    {
+        if (mToolTip == null || mToolTip.getMapView() != mv)
+        {
             mToolTip = createTooltip(mv);
         }
+
         return mToolTip;
     }
 
-    public void setToolTip(InfoWindow mToolTip) {
+    public void setToolTip(InfoWindow mToolTip)
+    {
         this.mToolTip = mToolTip;
     }
 
-    public void closeToolTip() {
-        if (mToolTip != null && mToolTip.equals(mToolTip.getMapView().getCurrentTooltip())) {
+    public void closeToolTip()
+    {
+        if (mToolTip != null && mToolTip.equals(mToolTip.getMapView().getCurrentTooltip()))
+        {
             mToolTip.getMapView().closeCurrentTooltip();
         }
     }
 
-    public void blur() {
-        if (mParentHolder != null) {
+    public void blur()
+    {
+        if (mParentHolder != null)
+        {
             mParentHolder.blurItem(this);
         }
     }
 
     @Override
-    public LatLng getPosition() {
+    public LatLng getPosition()
+    {
         return mLatLng;
     }
 
@@ -178,41 +199,50 @@ public class Marker implements MapViewConstants, ClusterItem {
      * adjustment
      * should be made.
      */
-    public enum HotspotPlace {
+    public enum HotspotPlace
+    {
         NONE, CENTER, BOTTOM_CENTER, TOP_CENTER, RIGHT_CENTER,
         LEFT_CENTER, UPPER_RIGHT_CORNER, LOWER_RIGHT_CORNER,
         UPPER_LEFT_CORNER, LOWER_LEFT_CORNER
     }
 
-    public String getUid() {
+    public String getUid()
+    {
         return mUid;
     }
 
-    public String getTitle() {
+    public String getTitle()
+    {
         return mTitle;
     }
 
-    public LatLng getPoint() {
+    public LatLng getPoint()
+    {
         return mLatLng;
     }
 
-    public void setTitle(String aTitle) {
+    public void setTitle(String aTitle)
+    {
         mTitle = aTitle;
     }
 
-    public void setDescription(String aDescription) {
+    public void setDescription(String aDescription)
+    {
         mDescription = aDescription;
     }
 
-    public void setSubDescription(String aSubDescription) {
+    public void setSubDescription(String aSubDescription)
+    {
         mSubDescription = aSubDescription;
     }
 
-    public void setImage(Drawable anImage) {
+    public void setImage(Drawable anImage)
+    {
         mImage = anImage;
     }
 
-    public void setRelatedObject(Object o) {
+    public void setRelatedObject(Object o)
+    {
         mRelatedObject = o;
     }
 
@@ -221,7 +251,8 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @param point
      */
-    public void setPoint(LatLng point) {
+    public void setPoint(LatLng point)
+    {
         mLatLng = point;
         invalidate();
     }
@@ -231,7 +262,8 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @return
      */
-    public String getDescription() {
+    public String getDescription()
+    {
         return mDescription;
     }
 
@@ -240,7 +272,8 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @return
      */
-    public String getSubDescription() {
+    public String getSubDescription()
+    {
         return mSubDescription;
     }
 
@@ -249,19 +282,23 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @return
      */
-    public Drawable getImage() {
+    public Drawable getImage()
+    {
         return mImage;
     }
 
-    public Object getRelatedObject() {
+    public Object getRelatedObject()
+    {
         return mRelatedObject;
     }
 
-    public ItemizedOverlay getParentHolder() {
+    public ItemizedOverlay getParentHolder()
+    {
         return mParentHolder;
     }
 
-    public void setParentHolder(ItemizedOverlay o) {
+    public void setParentHolder(ItemizedOverlay o)
+    {
         mParentHolder = o;
     }
 
@@ -271,9 +308,11 @@ public class Marker implements MapViewConstants, ClusterItem {
      * @param stateBitset State Of Marker (@see #ITEM_STATE_FOCUSED_MASK , @see #ITEM_STATE_PRESSED_MASK, @see #ITEM_STATE_SELECTED_MASK)
      * @return marker drawable corresponding to stateBitset
      */
-    public Drawable getMarker(final int stateBitset) {
+    public Drawable getMarker(final int stateBitset)
+    {
         // marker has not been specified yet, so load Default Marker Pin
-        if (mMarker == null) {
+        if (mMarker == null)
+        {
             setMarker(getDefaultPinDrawable(), true);
         }
 
@@ -288,9 +327,11 @@ public class Marker implements MapViewConstants, ClusterItem {
      * @param marker     Drawable resource to be used as Marker image
      * @param isMakiIcon True if Maki Icon, False if not (ex: Custom Image)
      */
-    public void setMarker(final Drawable marker, boolean isMakiIcon) {
+    public void setMarker(final Drawable marker, boolean isMakiIcon)
+    {
         this.mMarker = marker;
-        if (marker != null) {
+        if (marker != null)
+        {
             marker.setBounds(0, 0, marker.getIntrinsicWidth(), marker.getIntrinsicHeight());
             isUsingMakiIcon = isMakiIcon;
         }
@@ -303,7 +344,8 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @param marker Drawable resource to be used as Marker image
      */
-    public void setMarker(final Drawable marker) {
+    public void setMarker(final Drawable marker)
+    {
         this.setMarker(marker, false);
     }
 
@@ -312,11 +354,14 @@ public class Marker implements MapViewConstants, ClusterItem {
      *
      * @param place Hotspot Location @see #HotspotPlace
      */
-    public void setHotspot(HotspotPlace place) {
-        if (place == null) {
+    public void setHotspot(HotspotPlace place)
+    {
+        if (place == null)
+        {
             place = HotspotPlace.BOTTOM_CENTER; //use same default than in osmdroid.
         }
-        switch (place) {
+        switch (place)
+        {
             case NONE:
             case UPPER_LEFT_CORNER:
                 mAnchor.set(0, 0);
@@ -349,69 +394,86 @@ public class Marker implements MapViewConstants, ClusterItem {
         invalidate();
     }
 
-    public Point getAnchor() {
-        if (mAnchor != null) {
+    public Point getAnchor()
+    {
+        if (mAnchor != null)
+        {
             int markerWidth = getWidth(), markerHeight = getHeight();
             return new Point((int) (-mAnchor.x * markerWidth), (int) (-mAnchor.y * markerHeight));
         }
         return new Point(0, 0);
     }
 
-    public Point getAnchor(HotspotPlace place) {
+    public Point getAnchor(HotspotPlace place)
+    {
         int markerWidth = getWidth(), markerHeight = getHeight();
         return getHotspot(place, markerWidth, markerHeight);
     }
 
-    public void setAnchor(final PointF anchor) {
+    public void setAnchor(final PointF anchor)
+    {
         this.mAnchor = anchor;
         invalidate();
     }
 
-    public static void setState(final Drawable drawable, final int stateBitset) {
+    public static void setState(final Drawable drawable, final int stateBitset)
+    {
         final int[] states = new int[3];
         int index = 0;
-        if ((stateBitset & ITEM_STATE_PRESSED_MASK) > 0) {
+        if ((stateBitset & ITEM_STATE_PRESSED_MASK) > 0)
+        {
             states[index++] = android.R.attr.state_pressed;
         }
-        if ((stateBitset & ITEM_STATE_SELECTED_MASK) > 0) {
+        if ((stateBitset & ITEM_STATE_SELECTED_MASK) > 0)
+        {
             states[index++] = android.R.attr.state_selected;
         }
-        if ((stateBitset & ITEM_STATE_FOCUSED_MASK) > 0) {
+        if ((stateBitset & ITEM_STATE_FOCUSED_MASK) > 0)
+        {
             states[index++] = android.R.attr.state_focused;
         }
 
-        if (drawable != null) {
+        if (drawable != null)
+        {
             drawable.setState(states);
         }
     }
 
-    public Drawable getDrawable() {
+    public Drawable getDrawable()
+    {
         return this.mMarker;
     }
 
     /**
      * Get the width of the marker, based on the width of the image backing it.
      */
-    public int getWidth() {
-        if (mMarker == null) {
+    public int getWidth()
+    {
+        if (mMarker == null)
+        {
             return 0;
         }
         return mMarker.getIntrinsicWidth();
     }
 
-    public int getHeight() {
-        if (mMarker == null) {
+    public int getHeight()
+    {
+        if (mMarker == null)
+        {
             return 0;
         }
         int result = getRealHeight();
-        if (isUsingMakiIcon) {
+        if (isUsingMakiIcon)
+        {
             result = result / 2;
         }
         return result;
     }
 
-    public int getRealHeight() {
-        if (mMarker == null) {
+    public int getRealHeight()
+    {
+        if (mMarker == null)
+        {
             return 0;
         }
         return mMarker.getIntrinsicHeight();
@@ -423,19 +485,23 @@ public class Marker implements MapViewConstants, ClusterItem {
      * @param projection Projection
      * @param reuse      PointF to reuse
      */
-    public PointF getPositionOnScreen(final Projection projection, final PointF reuse) {
+    public PointF getPositionOnScreen(final Projection projection, final PointF reuse)
+    {
         return projection.toPixels(mCurMapCoords, reuse);
     }
 
-    public PointF getDrawingPositionOnScreen(final Projection projection, PointF reuse) {
+    public PointF getDrawingPositionOnScreen(final Projection projection, PointF reuse)
+    {
         reuse = getPositionOnScreen(projection, reuse);
         Point point = getAnchor();
         reuse.offset(point.x, point.y);
         return reuse;
     }
 
-    protected RectF getDrawingBounds(final Projection projection, RectF reuse) {
-        if (reuse == null) {
+    protected RectF getDrawingBounds(final Projection projection, RectF reuse)
+    {
+        if (reuse == null)
+        {
             reuse = new RectF();
         }
         final PointF position = getPositionOnScreen(projection, null);
@@ -449,8 +515,10 @@ public class Marker implements MapViewConstants, ClusterItem {
         return reuse;
     }
 
-    protected RectF getMapDrawingBounds(final Projection projection, RectF reuse) {
-        if (reuse == null) {
+    protected RectF getMapDrawingBounds(final Projection projection, RectF reuse)
+    {
+        if (reuse == null)
+        {
             reuse = new RectF();
         }
         projection.toMapPixels(mLatLng, mCurMapCoords);
@@ -463,18 +531,23 @@ public class Marker implements MapViewConstants, ClusterItem {
     }
 
 
-    protected RectF getHitBounds(final Projection projection, RectF reuse) {
+    protected RectF getHitBounds(final Projection projection, RectF reuse)
+    {
         return getDrawingBounds(projection, reuse);
     }
 
-    public PointF getHotspotScale(HotspotPlace place, PointF reuse) {
-        if (reuse == null) {
+    public PointF getHotspotScale(HotspotPlace place, PointF reuse)
+    {
+        if (reuse == null)
+        {
             reuse = new PointF();
         }
-        if (place == null) {
+        if (place == null)
+        {
             place = HotspotPlace.BOTTOM_CENTER; //use same default than in osmdroid.
         }
-        switch (place) {
+        switch (place)
+        {
             case NONE:
             case UPPER_LEFT_CORNER:
                 reuse.set(0, 0);
@@ -511,7 +584,8 @@ public class Marker implements MapViewConstants, ClusterItem {
      * From a HotspotPlace and drawable dimensions (width, height), return the hotspot position.
      * Could be a public method of HotspotPlace or OverlayItem...
      */
-    public Point getHotspot(HotspotPlace place, int w, int h) {
+    public Point getHotspot(HotspotPlace place, int w, int h)
+    {
         PointF scale = getHotspotScale(place, null);
         return new Point((int) (-w * scale.x), (int) (-h * scale.y));
     }
@@ -522,13 +596,15 @@ public class Marker implements MapViewConstants, ClusterItem {
      * <ul>image and sub-description if any.</ul>
      * and centers the map view on the item if panIntoView is true. <br>
      */
-    public void showBubble(InfoWindow tooltip, MapView aMapView, boolean panIntoView) {
+    public void showBubble(InfoWindow tooltip, MapView aMapView, boolean panIntoView)
+    {
         //offset the tooltip to be top-centered on the marker:
         Point markerH = getAnchor();
         Point tooltipH = getAnchor(HotspotPlace.TOP_CENTER);
         markerH.offset(-tooltipH.x, tooltipH.y);
         tooltip.open(this, this.getPoint(), markerH.x, markerH.y);
-        if (panIntoView) {
+        if (panIntoView)
+        {
             aMapView.getController().animateTo(getPoint());
         }
 
@@ -539,23 +615,28 @@ public class Marker implements MapViewConstants, ClusterItem {
     /**
      * Sets the Icon image that represents this marker on screen.
      */
-    public Marker setIcon(Icon aIcon) {
+    public Marker setIcon(Icon aIcon)
+    {
         this.icon = aIcon;
         icon.setMarker(this);
         isUsingMakiIcon = true;
         return this;
     }
 
-    public boolean isUsingMakiIcon() {
+    public boolean isUsingMakiIcon()
+    {
         return isUsingMakiIcon;
     }
 
-    public PointF getPositionOnMap() {
+    public PointF getPositionOnMap()
+    {
         return mCurMapCoords;
     }
 
-    public void updateDrawingPosition() {
-        if (mapView == null) {
+    public void updateDrawingPosition()
+    {
+        if (mapView == null)
+        {
             return; //not on map yet
         }
         getMapDrawingBounds(mapView.getProjection(), mMyLocationRect);
@@ -564,8 +645,10 @@ public class Marker implements MapViewConstants, ClusterItem {
     /**
      * Sets the marker to be redrawn.
      */
-    public void invalidate() {
-        if (mapView == null) {
+    public void invalidate()
+    {
+        if (mapView == null)
+        {
             return; //not on map yet
         }
         // Get new drawing bounds
@@ -575,11 +658,23 @@ public class Marker implements MapViewConstants, ClusterItem {
         // If we had a previous location, merge in those bounds too
         newRect.union(mMyLocationPreviousRect);
         // Invalidate the bounds
-        mapView.post(new Runnable() {
+        mapView.post(new Runnable()
+        {
             @Override
-            public void run() {
+            public void run()
+            {
                 mapView.invalidateMapCoordinates(newRect);
             }
         });
+    }
+
+    public InfoWindow.InfoWindowClickedListener getInfoWindowClickedListener()
+    {
+        return mClickedListener;
+    }
+
+    public void setInfoWindowClickedListener(InfoWindow.InfoWindowClickedListener mClickedListener)
+    {
+        this.mClickedListener = mClickedListener;
     }
 }

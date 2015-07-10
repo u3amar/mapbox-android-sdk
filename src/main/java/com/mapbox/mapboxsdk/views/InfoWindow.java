@@ -6,13 +6,19 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.overlay.Marker;
 
 /**
  * A tooltip view
  */
-public class InfoWindow {
+public class InfoWindow
+{
+    public interface InfoWindowClickedListener
+    {
+        void onInfoWindowClicked(Marker marker);
+    }
 
     private Marker boundMarker;
 
@@ -22,6 +28,8 @@ public class InfoWindow {
      */
     private MapView mMapView;
     private boolean mIsVisible;
+    private Marker mMarker;
+    private InfoWindowClickedListener mClickedListener;
     protected View mView;
 
     static int mTitleId = 0;
@@ -29,32 +37,48 @@ public class InfoWindow {
     static int mSubDescriptionId = 0;
     static int mImageId = 0;
 
-    public InfoWindow(int layoutResId, MapView mapView) {
+    public InfoWindow(int layoutResId, MapView mapView, final Marker marker)
+    {
         mMapView = mapView;
         mIsVisible = false;
+        mMarker = marker;
+
         ViewGroup parent = (ViewGroup) mapView.getParent();
         Context context = mapView.getContext();
-        LayoutInflater inflater =
-                (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mView = inflater.inflate(layoutResId, parent, false);
 
-        if (mTitleId == 0) {
+        if (mTitleId == 0)
+        {
             setResIds(mapView.getContext());
         }
 
         // default behavior: close it when clicking on the tooltip:
-        setOnTouchListener(new View.OnTouchListener() {
+        setOnTouchListener(new View.OnTouchListener()
+        {
             @Override
-            public boolean onTouch(View v, MotionEvent e) {
-                if (e.getAction() == MotionEvent.ACTION_UP) {
+            public boolean onTouch(View v, MotionEvent e)
+            {
+                if (e.getAction() == MotionEvent.ACTION_UP)
+                {
+                    if(mClickedListener != null)
+                        mClickedListener.onInfoWindowClicked(marker);
+
                     close();
                 }
+
                 return true;
             }
         });
     }
 
-    public InfoWindow(View view, MapView mapView) {
+    public InfoWindow(int layoutResId, MapView mapView)
+    {
+        this(layoutResId, mapView, null);
+    }
+
+    public InfoWindow(View view, MapView mapView)
+    {
         mMapView = mapView;
         mIsVisible = false;
         ViewGroup parent = (ViewGroup) mapView.getParent();
@@ -64,10 +88,13 @@ public class InfoWindow {
         mView = view;
 
         // default behavior: close it when clicking on the tooltip:
-        setOnTouchListener(new View.OnTouchListener() {
+        setOnTouchListener(new View.OnTouchListener()
+        {
             @Override
-            public boolean onTouch(View v, MotionEvent e) {
-                if (e.getAction() == MotionEvent.ACTION_UP) {
+            public boolean onTouch(View v, MotionEvent e)
+            {
+                if (e.getAction() == MotionEvent.ACTION_UP)
+                {
                     close();
                 }
                 return true;
@@ -78,13 +105,14 @@ public class InfoWindow {
     /**
      * open the window at the specified position.
      *
-     * @param object the graphical object on which is hooked the view
+     * @param object   the graphical object on which is hooked the view
      * @param position to place the window on the map
-     * @param offsetX (&offsetY) the offset of the view to the position, in pixels.
-     * This allows to offset the view from the object position.
+     * @param offsetX  (&offsetY) the offset of the view to the position, in pixels.
+     *                 This allows to offset the view from the object position.
      * @return this infowindow
      */
-    public InfoWindow open(Marker object, LatLng position, int offsetX, int offsetY) {
+    public InfoWindow open(Marker object, LatLng position, int offsetX, int offsetY)
+    {
         onOpen(object);
         MapView.LayoutParams lp = new MapView.LayoutParams(MapView.LayoutParams.WRAP_CONTENT,
                 MapView.LayoutParams.WRAP_CONTENT, position, MapView.LayoutParams.BOTTOM_CENTER,
@@ -97,10 +125,13 @@ public class InfoWindow {
 
     /**
      * Close this InfoWindow if it is visible, otherwise don't do anything.
+     *
      * @return this info window
      */
-    public InfoWindow close() {
-        if (mIsVisible) {
+    public InfoWindow close()
+    {
+        if (mIsVisible)
+        {
             mIsVisible = false;
             ((ViewGroup) mView.getParent()).removeView(mView);
             this.boundMarker.blur();
@@ -115,7 +146,8 @@ public class InfoWindow {
      *
      * @return the Android view
      */
-    public View getView() {
+    public View getView()
+    {
         return mView;
     }
 
@@ -124,7 +156,8 @@ public class InfoWindow {
      *
      * @return the mapView
      */
-    public MapView getMapView() {
+    public MapView getMapView()
+    {
         return mMapView;
     }
 
@@ -134,7 +167,8 @@ public class InfoWindow {
      *
      * @param overlayItem the tapped overlay item
      */
-    public void onOpen(Marker overlayItem) {
+    public void onOpen(Marker overlayItem)
+    {
         String title = overlayItem.getTitle();
         ((TextView) mView.findViewById(mTitleId /*R.id.title*/)).setText(title);
         String snippet = overlayItem.getDescription();
@@ -143,33 +177,41 @@ public class InfoWindow {
         //handle sub-description, hiding or showing the text view:
         TextView subDescText = (TextView) mView.findViewById(mSubDescriptionId);
         String subDesc = overlayItem.getSubDescription();
-        if ("".equals(subDesc)) {
+        if ("".equals(subDesc))
+        {
             subDescText.setVisibility(View.GONE);
-        } else {
+        }
+        else
+        {
             subDescText.setText(subDesc);
             subDescText.setVisibility(View.VISIBLE);
         }
     }
 
-    public void onClose() {
+    public void onClose()
+    {
         //by default, do nothing
     }
 
-    public InfoWindow setBoundMarker(Marker aBoundMarker) {
+    public InfoWindow setBoundMarker(Marker aBoundMarker)
+    {
         this.boundMarker = aBoundMarker;
         return this;
     }
 
-    public Marker getBoundMarker() {
+    public Marker getBoundMarker()
+    {
         return boundMarker;
     }
 
     /**
      * Given a context, set the resource ids for the layout
      * of the InfoWindow.
+     *
      * @param context
      */
-    private static void setResIds(Context context) {
+    private static void setResIds(Context context)
+    {
         String packageName = context.getPackageName(); //get application package name
         mTitleId = context.getResources().getIdentifier("id/tooltip_title", null, packageName);
         mDescriptionId =
@@ -181,9 +223,16 @@ public class InfoWindow {
 
     /**
      * Use to override default touch events handling on InfoWindow (ie, close automatically)
+     *
      * @param listener New View.OnTouchListener to use
      */
-    public void setOnTouchListener(View.OnTouchListener listener) {
+    public void setOnTouchListener(View.OnTouchListener listener)
+    {
         mView.setOnTouchListener(listener);
+    }
+
+    public void setClickedListener(InfoWindowClickedListener mClickedListener)
+    {
+        this.mClickedListener = mClickedListener;
     }
 }
